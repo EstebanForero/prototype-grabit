@@ -1,0 +1,14 @@
+{
+  "name": "grabit-seguimiento",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MVP on-premise del seguimiento logístico de Grab It. La lógica de estados corre sola; una persona entra solo en la excepción.",
+  "scripts": {
+    "test": "bun test",
+    "demo": "bun src/cli/main.ts demo",
+    "seguimiento": "bun src/cli/main.ts seguimiento",
+    "webhook": "bun src/http/server.ts",
+    "check": "bun test"
+  }
+}
