@@ -1,0 +1,37 @@
+services:
+  seguimiento:
+    build: .
+    ports:
+      - "8787:8787"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      GRABIT_DB: /data/seguimiento.sqlite
+      MAILBOX_FILE: /data/mailbox.json
+      PORT: "8787"
+    volumes:
+      - seguimiento-data:/data
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const respuesta = await fetch('http://127.0.0.1:8787/health'); if (!respuesta.ok) process.exit(1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 8s
+
+  # Solo inspecciona el esquema de producción. El proceso de arriba sigue en SQLite.
+  mysql:
+    image: mysql:8.4
+    profiles: ["mysql"]
+    environment:
+      MYSQL_ROOT_PASSWORD: grabit-local
+      MYSQL_DATABASE: seguimiento
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./migrations/001_mysql.sql:/docker-entrypoint-initdb.d/001_mysql.sql:ro
+      - mysql-data:/var/lib/mysql
+
+volumes:
+  seguimiento-data:
+  mysql-data:

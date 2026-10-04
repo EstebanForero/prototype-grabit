@@ -1,0 +1,8 @@
+node_modules
+data
+docs
+tests
+*.sqlite
+*.sqlite-*
+.env
+mailbox.json
