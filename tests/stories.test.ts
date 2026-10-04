@@ -112,6 +112,9 @@ describe("historias de operación", () => {
       code: "picked_up",
       country: "US",
     });
+    const beforeFlight = step(item, [warehouse, courier], [moving, arrived], "2026-09-05T16:05:00.000Z");
+    expect(beforeFlight.outcome).toBe(null);
+    expect(beforeFlight.product.status).toBe("in_warehouse");
     played = step(item, [warehouse, courier], [moving, arrived, flight], "2026-09-05T20:05:00.000Z");
     expect(played.outcome).toBe("apply");
     expect(played.status).toBe("shipped");

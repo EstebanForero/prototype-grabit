@@ -1,0 +1,9 @@
+From: shipment-tracking@amazon.com
+Subject: Your package was shipped
+To: compras@grabit.example
+
+Your Amazon.com order has shipped.
+
+Order #112-4455667-1234567
+Carrier: UPS
+Tracking ID: 1Z999AA10123456784

@@ -1,0 +1,6 @@
+From: pedidos@homecenter.com
+Subject: Tu pedido fue despachado
+
+Pedido 458221 de Homecenter va en camino.
+Transportadora: Homecenter
+Código de seguimiento: HC4582210099

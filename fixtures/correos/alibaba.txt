@@ -1,0 +1,6 @@
+From: notice@alibaba.com
+Subject: Order shipped
+
+Alibaba order 123456789012345 has shipped.
+Carrier: Alibaba Logistics
+Tracking ID: ALB9988776655

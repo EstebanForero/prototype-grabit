@@ -97,7 +97,9 @@ function propose(
     };
   }
 
-  const previousMoved = active.slice(0, -1).some((item) => milestoneOf(item, observations) !== "none");
+  const previousMoved = active
+    .slice(0, -1)
+    .some((item) => item.destination === "customer" && milestoneOf(item, observations) !== "none");
   if (previousMoved) {
     const previous = [...active].reverse().find((item) => milestoneOf(item, observations) !== "none") ?? last;
     return {

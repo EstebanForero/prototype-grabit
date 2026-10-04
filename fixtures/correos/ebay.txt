@@ -1,0 +1,6 @@
+From: ebay@ebay.com
+Subject: Your item has shipped
+
+Order number 12-34567-89012
+Carrier: FedEx
+Tracking number: 794612345678

@@ -1,0 +1,6 @@
+From: envios@mercadolibre.com
+Subject: Tu compra fue enviada
+
+Hola, tu venta 2000003847563 ya va en camino.
+Transportadora: Servientrega
+Código de seguimiento: 999001234567
