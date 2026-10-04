@@ -8,7 +8,11 @@
     "test": "bun test",
     "demo": "bun src/cli/main.ts demo",
     "seguimiento": "bun src/cli/main.ts seguimiento",
+    "start": "bun src/http/server.ts",
     "webhook": "bun src/http/server.ts",
     "check": "bun test"
+  },
+  "dependencies": {
+    "imapflow": "^2.2.4"
   }
 }
