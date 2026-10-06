@@ -439,6 +439,99 @@ export class TrackingStore {
     };
   }
 
+  beginExtraction(): string {
+    const id = randomUUID();
+    this.db
+      .query("INSERT INTO extraction_runs (id, started_at, status) VALUES (?, ?, 'running')")
+      .run(id, this.clock());
+    this.db
+      .query(
+        `DELETE FROM extraction_runs WHERE id NOT IN (
+           SELECT id FROM extraction_runs ORDER BY started_at DESC LIMIT 40
+         )`,
+      )
+      .run();
+    return id;
+  }
+
+  finishExtraction(id: string, result: {
+    status: "done" | "error";
+    examined?: number;
+    created?: number;
+    already?: number;
+    unmatched?: number;
+    ignored?: number;
+    error?: string | null;
+    items?: unknown[];
+  }): void {
+    this.db
+      .query(
+        `UPDATE extraction_runs
+         SET finished_at = ?, status = ?, examined = ?, created_count = ?, already_count = ?,
+             unmatched_count = ?, ignored_count = ?, error = ?, items_json = ?
+         WHERE id = ?`,
+      )
+      .run(
+        this.clock(),
+        result.status,
+        result.examined ?? 0,
+        result.created ?? 0,
+        result.already ?? 0,
+        result.unmatched ?? 0,
+        result.ignored ?? 0,
+        result.error ?? null,
+        JSON.stringify(result.items ?? []),
+        id,
+      );
+  }
+
+  listExtractions(): Array<{
+    id: string;
+    startedAt: string;
+    finishedAt: string | null;
+    status: "running" | "done" | "error";
+    examined: number;
+    created: number;
+    already: number;
+    unmatched: number;
+    ignored: number;
+    error: string | null;
+    items: unknown[];
+  }> {
+    const rows = this.db
+      .query(
+        `SELECT id, started_at, finished_at, status, examined, created_count, already_count,
+                unmatched_count, ignored_count, error, items_json
+         FROM extraction_runs ORDER BY started_at DESC LIMIT 40`,
+      )
+      .all() as Array<{
+        id: string;
+        started_at: string;
+        finished_at: string | null;
+        status: "running" | "done" | "error";
+        examined: number;
+        created_count: number;
+        already_count: number;
+        unmatched_count: number;
+        ignored_count: number;
+        error: string | null;
+        items_json: string;
+      }>;
+    return rows.map((row) => ({
+      id: row.id,
+      startedAt: row.started_at,
+      finishedAt: row.finished_at,
+      status: row.status,
+      examined: row.examined,
+      created: row.created_count,
+      already: row.already_count,
+      unmatched: row.unmatched_count,
+      ignored: row.ignored_count,
+      error: row.error,
+      items: JSON.parse(row.items_json) as unknown[],
+    }));
+  }
+
   questions(now = this.clock()) {
     return questionsDue(
       this.allShipments().filter((item) => item.recordStatus === "active"),

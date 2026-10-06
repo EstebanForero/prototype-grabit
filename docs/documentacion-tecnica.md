@@ -211,7 +211,7 @@ AGGREGATOR_SECRET=dev-secret bun run start
 
 Abrir `http://127.0.0.1:8787`. Salud: `curl -s http://127.0.0.1:8787/health`.
 
-Recorrido real. Primero se registra el producto. Después se guarda el IMAP de la cuenta gratuita. El aviso se envía desde el webmail de esa cuenta, a ella misma, o con `bun run enviar` si `SMTP_USER` y `SMTP_PASSWORD` están definidos, o si la consola ya guardó la cuenta. El escaneo lo lee de la bandeja del proveedor:
+Recorrido real, todo en la consola. Primero se registra el producto. Después «Guardar y probar» deja el IMAP de la cuenta gratuita. «Enviar aviso» entrega el texto por el SMTP de ese proveedor, a la misma cuenta. «Vigilar buzón» hace que el proceso vuelva a abrir IMAP cada 45 segundos. «Leer ahora» dispara una extracción en el momento. La pantalla separa las que están en curso de las ya ejecutadas. El mismo envío se puede repetir con `bun run enviar` si `SMTP_USER` y `SMTP_PASSWORD` están definidos, o si la consola ya guardó la cuenta. El ejemplo de abajo es ese mismo recorrido, escrito para quien no abre el navegador:
 
 ```bash
 curl -s -X POST http://127.0.0.1:8787/api/productos \
@@ -220,13 +220,15 @@ curl -s -X POST http://127.0.0.1:8787/api/productos \
 curl -s -X POST http://127.0.0.1:8787/api/correo \
   -H 'content-type: application/json' \
   -d '{"host":"imap.gmail.com","port":993,"secure":true,"user":"cuenta-de-demostracion@gmail.com","password":"contraseña-de-aplicacion","mailbox":"INBOX"}'
-bun run enviar
+curl -s -X POST http://127.0.0.1:8787/api/correo/enviar
+curl -s -X POST http://127.0.0.1:8787/api/correo/vigilar -H 'content-type: application/json' -d '{"active":true,"sinceDays":2}'
+curl -s http://127.0.0.1:8787/api/correo/procesos
 curl -s -X POST http://127.0.0.1:8787/api/correo/escanear -H 'content-type: application/json' -d '{"sinceDays":2}'
 ```
 
-Ese `password` del ejemplo no es una clave real. En Gmail es la contraseña de aplicación, no la clave de la cuenta, y no se escribe en el repositorio. Yahoo usa `imap.mail.yahoo.com` y su propia contraseña de aplicación. GMX usa `imap.gmx.com` y la clave de la cuenta, con IMAP activado en el webmail. La pantalla hace lo mismo con «Guardar y probar», «Vigilar buzón» y «Leer ahora». Cada mensaje muestra Llegó, Lectura y Producto. Una guía repetida responde `ya-estaba` y no crea otro envío. Un mensaje sin producto queda para vincularlo. `GET /api/correo` informa si hay buzón y no incluye la clave.
+Ese `password` del ejemplo no es una clave real. En Gmail es la contraseña de aplicación, no la clave de la cuenta, y no se escribe en el repositorio. Yahoo usa `imap.mail.yahoo.com` y su propia contraseña de aplicación. GMX usa `imap.gmx.com` y la clave de la cuenta, con IMAP activado en el webmail. La pantalla hace lo mismo con «Guardar y probar», «Enviar aviso», «Vigilar buzón» y «Leer ahora». Cada extracción guarda inicio, conteos y, si falló, el error. Al abrirla, cada mensaje muestra Llegó, Lectura y Producto. Una guía repetida responde `ya-estaba` y no crea otro envío. Un mensaje sin producto queda para vincularlo. `GET /api/correo` informa si hay buzón y si la vigilancia está activa, y no incluye la clave. `GET /api/correo/procesos` devuelve la vigilancia y las últimas lecturas. Esas filas viven en la SQLite del prototipo. El esquema MySQL de producción no las tiene. Reiniciar el proceso apaga la vigilancia; el historial queda.
 
-No hace falta mostrar la clave en la grabación. La cuenta se conecta antes, o el campo se cubre. El mensaje tiene que verse en el webmail del proveedor y luego en la tarjeta.
+No hace falta mostrar la clave en la grabación. La cuenta se conecta en la consola, o el campo se cubre. El aviso se envía desde «Enviar aviso» y la tarjeta aparece cuando la extracción lo lee.
 
 Aviso firmado:
 
@@ -281,7 +283,7 @@ Duración objetivo: 8 minutos. Quien graba narra con estas palabras, o muy cerca
 | 0:00–0:50 | Nada todavía, o la primera página del informe | Grab It compra para sus clientes y hoy alguien entra a cada transportadora para mover el estado a mano. Cuando la guía cambia, la anterior se pierde. El cliente ve el portal desactualizado y el equipo se entera tarde. |
 | 0:50–1:30 | Este documento, sección 2, o `docker compose up` ya en marcha | El módulo vive en los servidores de la empresa. Recibe el evento, lo normaliza y devuelve una decisión: aplicar o retener. No reemplaza Control ni el portal. MySQL es el destino de producción; esta demostración usa SQLite, también dentro de Docker, para poder correrla sin ese servidor. |
 | 1:30–2:00 | `bun test` en la terminal | Antes del recorrido, las historias de la operación pasan solas. Si una regla se rompe, la prueba falla. |
-| 2:00–3:10 | Webmail de la cuenta gratuita y, al lado, la consola en «Vigilar buzón» | Se registra el pedido de Amazon. El aviso se envía desde ese webmail. No se contrató Workspace ni el agregador. La tarjeta muestra de quién llegó, qué guía se leyó y que quedó en el producto. |
+| 2:00–3:10 | Consola: Registrar compra, Guardar y probar, Enviar aviso, y la lista En curso / Ejecutadas | Se registra el pedido de Amazon. El aviso sale desde la misma pantalla, por el SMTP del proveedor. No se contrató Workspace ni el agregador. La extracción en curso pasa a ejecutada y la tarjeta muestra de quién llegó, qué guía se leyó y que quedó en el producto. |
 | 3:10–4:20 | `bun run demo`, pasos 1 a 7 | Este otro recorrido, en la terminal, sigue el mismo producto por tres guías: Miami, courier y Deprisa. Un entregado en Doral deja el producto en bodega y enciende la alerta de la guía que falta. La entrega en Bogotá sí se aplica. |
 | 4:20–5:20 | Pasos 8 y 9 del mismo demo | El mismo "entregado", en Medellín, se retiene. El cliente seguiría viendo En camino. Cuando la transportadora reporta Bogotá, la prueba completa se cumple. Lo dudoso no llega al cliente. |
 | 5:20–6:20 | `bun src/cli/main.ts ficha --producto audifonos` y, si se quiere, la ficha de la consola | La ficha conserva las guías, las observaciones y las decisiones. La guía equivocada se anula con motivo; no se borra. |

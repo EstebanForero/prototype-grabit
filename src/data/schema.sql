@@ -78,5 +78,19 @@ CREATE TABLE IF NOT EXISTS module_events (
 );
 
 CREATE INDEX IF NOT EXISTS idx_shipment_products_product ON shipment_products(product_id);
+
+CREATE TABLE IF NOT EXISTS extraction_runs (
+  id TEXT PRIMARY KEY,
+  started_at TEXT NOT NULL,
+  finished_at TEXT,
+  status TEXT NOT NULL,
+  examined INTEGER NOT NULL DEFAULT 0,
+  created_count INTEGER NOT NULL DEFAULT 0,
+  already_count INTEGER NOT NULL DEFAULT 0,
+  unmatched_count INTEGER NOT NULL DEFAULT 0,
+  ignored_count INTEGER NOT NULL DEFAULT 0,
+  error TEXT,
+  items_json TEXT NOT NULL DEFAULT '[]'
+);
 CREATE INDEX IF NOT EXISTS idx_observations_shipment ON observations(shipment_id);
 CREATE INDEX IF NOT EXISTS idx_decisions_product ON decisions(product_id, created_at);

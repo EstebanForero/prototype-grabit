@@ -26,11 +26,26 @@ export type ScanReport = {
 
 export type MailPublic = {
   configured: boolean;
+  watching?: boolean;
   host?: string;
   port?: number;
   secure?: boolean;
   user?: string;
   mailbox?: string;
+};
+
+export type ExtractionRun = {
+  id: string;
+  startedAt: string;
+  finishedAt: string | null;
+  status: "running" | "done" | "error";
+  examined: number;
+  created: number;
+  already: number;
+  unmatched: number;
+  ignored: number;
+  error: string | null;
+  items: ScanItem[];
 };
 
 export type TrackingRow = {

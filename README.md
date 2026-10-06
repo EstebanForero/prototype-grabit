@@ -17,9 +17,9 @@ bun run demo
 bun run start
 ```
 
-La consola queda en `http://127.0.0.1:8787`. El aviso tiene que llegar a un buzón real. Para la sustentación basta una cuenta personal gratuita y vacía: Gmail (`imap.gmail.com`, 993, TLS y contraseña de aplicación), Yahoo o GMX. No hace falta Gmail Workspace. «Vigilar buzón» vuelve a leer la bandeja cada 45 segundos, porque IMAP no avisa solo. La clave se guarda en `data/mailbox.json` (permiso 600) y la API no la devuelve. Una guía ya registrada no se duplica.
+La consola queda en `http://127.0.0.1:8787`. Ahí se registra la compra, se guarda el buzón, se vigila la bandeja, se envía el aviso y se ve cada extracción. Para la sustentación basta una cuenta personal gratuita y vacía: Gmail (`imap.gmail.com`, 993, TLS y contraseña de aplicación), Yahoo o GMX. No hace falta Gmail Workspace. «Vigilar buzón» hace que el servidor vuelva a leer la bandeja cada 45 segundos, porque IMAP no avisa solo. La clave se guarda en `data/mailbox.json` (permiso 600) y la API no la devuelve. Una guía ya registrada no se duplica.
 
-El mensaje se redacta en el webmail de esa cuenta, dirigido a ella misma, con el pedido `112-4455667-1234567` y la guía `1Z999AA10123456784`. El pedido tiene que estar registrado antes, o la guía queda sin producto. Si la cuenta ya está guardada, desde esta carpeta también se puede entregar el mismo texto por el SMTP del proveedor:
+«Enviar aviso» entrega, por el SMTP del proveedor, el pedido `112-4455667-1234567` y la guía `1Z999AA10123456784`. El pedido tiene que estar registrado antes, o la guía queda sin producto. La pantalla lista la extracción en curso y las ya ejecutadas; ese historial queda en la SQLite del prototipo y sobrevive a recargar. El mismo envío se puede repetir desde esta carpeta, con la cuenta ya guardada:
 
 ```bash
 bun run enviar

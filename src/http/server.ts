@@ -9,6 +9,7 @@ import {
   scanMailbox,
   type MailboxConfig,
 } from "../providers/mailbox.ts";
+import { sendDispatch } from "../providers/smtp.ts";
 import { parseAggregatorWebhook, signatureMatches } from "../providers/webhook.ts";
 
 const secret = process.env.AGGREGATOR_SECRET ?? "dev-secret";
@@ -18,6 +19,9 @@ const publicDir = join(import.meta.dir, "../../public");
 const mailboxFile = process.env.MAILBOX_FILE ?? "data/mailbox.json";
 
 let mailbox: MailboxConfig | null = configFromEnv();
+let watchTimer: ReturnType<typeof setInterval> | null = null;
+let watchSinceDays = 21;
+let scanChain: Promise<void> = Promise.resolve();
 
 export async function handleAggregatorRequest(store: TrackingStore, request: Request, signatureSecret: string): Promise<Response> {
   const body = await request.text();
@@ -82,6 +86,46 @@ function text(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
+function mailboxView() {
+  return { ...publicConfig(mailbox), watching: watchTimer !== null };
+}
+
+function runExtraction(store: TrackingStore, sinceDays: number): Promise<void> {
+  const job = scanChain.then(async () => {
+    if (!mailbox) return;
+    const id = store.beginExtraction();
+    try {
+      const report = await scanMailbox(store, mailbox, { sinceDays, limit: 30 });
+      store.finishExtraction(id, {
+        status: "done",
+        examined: report.examined,
+        created: report.created,
+        already: report.already,
+        unmatched: report.unmatched,
+        ignored: report.ignored,
+        items: report.items,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo leer el buzón.";
+      store.finishExtraction(id, { status: "error", error: message });
+    }
+  });
+  scanChain = job.then(() => undefined, () => undefined);
+  return job;
+}
+
+function startWatch(store: TrackingStore, sinceDays: number): void {
+  if (watchTimer) clearInterval(watchTimer);
+  watchSinceDays = sinceDays;
+  void runExtraction(store, sinceDays);
+  watchTimer = setInterval(() => void runExtraction(store, watchSinceDays), 45_000);
+}
+
+function stopWatch(): void {
+  if (watchTimer) clearInterval(watchTimer);
+  watchTimer = null;
+}
+
 if (import.meta.main) {
   mkdirSync(dirname(database), { recursive: true });
   loadMailboxFile();
@@ -117,7 +161,10 @@ if (import.meta.main) {
           return Response.json(product, { status: 201 });
         }
         if (request.method === "GET" && url.pathname === "/api/correo") {
-          return Response.json(publicConfig(mailbox));
+          return Response.json(mailboxView());
+        }
+        if (request.method === "GET" && url.pathname === "/api/correo/procesos") {
+          return Response.json({ watching: watchTimer !== null, runs: store.listExtractions() });
         }
         if (request.method === "POST" && url.pathname === "/api/correo") {
           const body = await readJson(request);
@@ -133,7 +180,7 @@ if (import.meta.main) {
             password,
             mailbox: text(body.mailbox) ?? "INBOX",
           });
-          return Response.json(publicConfig(mailbox));
+          return Response.json(mailboxView());
         }
         if (request.method === "POST" && url.pathname === "/api/correo/probar") {
           if (!mailbox) return Response.json({ error: "Todavía no hay un buzón configurado." }, { status: 400 });
@@ -143,11 +190,24 @@ if (import.meta.main) {
         if (request.method === "POST" && url.pathname === "/api/correo/escanear") {
           if (!mailbox) return Response.json({ error: "Todavía no hay un buzón configurado." }, { status: 400 });
           const body = await readJson(request);
-          const report = await scanMailbox(store, mailbox, {
-            sinceDays: Number(body.sinceDays ?? 21),
-            limit: Number(body.limit ?? 30),
-          });
-          return Response.json(report);
+          await runExtraction(store, Number(body.sinceDays ?? watchSinceDays));
+          const latest = store.listExtractions()[0];
+          if (latest?.status === "error") return Response.json({ error: latest.error }, { status: 400 });
+          return Response.json(latest ?? { items: [] });
+        }
+        if (request.method === "POST" && url.pathname === "/api/correo/vigilar") {
+          if (!mailbox) return Response.json({ error: "Todavía no hay un buzón configurado." }, { status: 400 });
+          const body = await readJson(request);
+          if (body.active === false) stopWatch();
+          else startWatch(store, Number(body.sinceDays ?? watchSinceDays));
+          return Response.json(mailboxView());
+        }
+        if (request.method === "POST" && url.pathname === "/api/correo/enviar") {
+          if (!mailbox) return Response.json({ error: "Todavía no hay un buzón configurado." }, { status: 400 });
+          const sent = await sendDispatch({ user: mailbox.user, password: mailbox.password, imapHost: mailbox.host });
+          const since = watchSinceDays;
+          setTimeout(() => void runExtraction(store, since), 8_000);
+          return Response.json({ ok: true, to: sent.to, host: sent.host, port: sent.port });
         }
         if (request.method === "POST" && url.pathname === "/api/correo/ejemplos") {
           const files = ["amazon.txt", "mercadolibre.txt", "ebay.txt", "alibaba.txt", "homecenter.txt"];
