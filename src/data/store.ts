@@ -373,7 +373,7 @@ export class TrackingStore {
     return { duplicate: false, decisions, events };
   }
 
-  ingestEmail(raw: string): { parsed: ReturnType<typeof parseDispatchEmail>; shipmentId?: string } {
+  ingestEmail(raw: string): { parsed: ReturnType<typeof parseDispatchEmail>; shipmentId?: string; linkedExisting?: boolean } {
     const parsed = parseDispatchEmail(raw);
     if ("error" in parsed) return { parsed };
     const row = this.db
@@ -389,7 +389,7 @@ export class TrackingStore {
       intake: "email",
       registeredBy: "lector-correo",
     });
-    return { parsed, shipmentId: created.shipmentId };
+    return { parsed, shipmentId: created.shipmentId, linkedExisting: created.linkedExisting };
   }
 
   listTracking(): TrackingRow[] {

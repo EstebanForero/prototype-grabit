@@ -16,7 +16,7 @@ bun run demo
 bun run start
 ```
 
-La consola queda en `http://127.0.0.1:8787`. En Buzón, «Cargar ejemplos» asocia las cinco tiendas de `fixtures/correos/` sin pedir una clave. Un buzón real usa IMAP; en Gmail hace falta una contraseña de aplicación. La clave se guarda en `data/mailbox.json` (permiso 600) y la API no la devuelve.
+La consola queda en `http://127.0.0.1:8787`. En Buzón, «Simular llegadas» muestra los cinco correos de `fixtures/correos/`, uno por uno, sin pedir una clave. Un buzón real usa IMAP: «Vigilar buzón» vuelve a leer la bandeja cada 45 segundos. En Gmail hace falta una contraseña de aplicación. La clave se guarda en `data/mailbox.json` (permiso 600) y la API no la devuelve. Una guía ya registrada no se duplica.
 
 Con Docker, desde esta misma carpeta:
 

@@ -39,7 +39,12 @@
               <h2>Leer el buzón de despacho</h2>
             </div>
           </header>
-          <p class="lead">La clave se queda en este servidor. No se escribe en el repositorio ni se devuelve a la pantalla. En Gmail hace falta IMAP activo y una contraseña de aplicación.</p>
+          <p class="lead">Cada correo se pinta al llegar: de quién viene, qué guía se leyó y si quedó en un producto. IMAP no avisa solo; con la vigilancia activa el servidor vuelve a leer la bandeja cada 45 segundos.</p>
+          <ol class="connect">
+            <li>El buzón es el de despacho de Grab It, el que recibe los avisos de las tiendas.</li>
+            <li>En Gmail hay que activar IMAP y crear una contraseña de aplicación. El servidor es <code>imap.gmail.com</code>, puerto 993.</li>
+            <li>La clave se guarda en este servidor y no vuelve a la pantalla. Sin buzón, «Simular llegadas» recorre los mismos cinco ejemplos.</li>
+          </ol>
           <form id="mail-form" class="panel">
             <label>Servidor IMAP <input name="host" value="imap.gmail.com" required /></label>
             <label>Puerto <input name="port" type="number" value="993" required /></label>
@@ -49,12 +54,13 @@
             <label>Días hacia atrás <input name="sinceDays" type="number" value="21" min="1" max="90" /></label>
             <div class="actions">
               <button type="submit">Guardar y probar</button>
-              <button type="button" id="scan" class="primary">Escanear correo</button>
-              <button type="button" id="samples" class="ghost">Cargar ejemplos</button>
+              <button type="button" id="watch" class="primary">Vigilar buzón</button>
+              <button type="button" id="scan">Leer ahora</button>
+              <button type="button" id="samples" class="ghost">Simular llegadas</button>
             </div>
             <p id="mail-status" class="status"></p>
           </form>
-          <div id="scan-results" class="rows"></div>
+          <div id="arrivals" class="rows"></div>
         </section>
 
         <section id="product" class="view" hidden>

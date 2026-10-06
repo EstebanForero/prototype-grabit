@@ -159,6 +159,7 @@ if (import.meta.main) {
           return Response.json({
             examined: items.length,
             created: items.filter((item) => item.outcome === "creado").length,
+            already: items.filter((item) => item.outcome === "ya-estaba").length,
             unmatched: items.filter((item) => item.outcome === "sin-producto").length,
             ignored: items.filter((item) => item.outcome === "ignorado").length,
             items,

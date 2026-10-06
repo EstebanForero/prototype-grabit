@@ -216,7 +216,7 @@ curl -s -X POST http://127.0.0.1:8787/api/correo/ejemplos
 curl -s http://127.0.0.1:8787/api/seguimiento
 ```
 
-El alta también está en la pantalla «Registrar compra». «Cargar ejemplos» hace el mismo recorrido. Un mensaje sin producto queda en la lista para vincularlo; uno que no es de las cinco tiendas se ignora. `GET /api/correo` informa si hay buzón y no incluye la clave.
+El alta también está en la pantalla «Registrar compra». «Simular llegadas» recorre los cinco ejemplos en el carril Llegó → Lectura → Producto. «Vigilar buzón» repite la lectura IMAP cada 45 segundos, porque el protocolo no empuja avisos. Un mensaje sin producto queda para vincularlo. Una guía repetida responde `ya-estaba` y no crea otro envío. `GET /api/correo` informa si hay buzón y no incluye la clave.
 
 Para un buzón real, en la pantalla se escriben servidor, usuario y clave, y «Guardar y probar» abre IMAP y cierra la sesión. «Escanear correo» lee los últimos 21 días, con un tope de 50 mensajes. En Gmail el usuario activa IMAP y usa una contraseña de aplicación. No hace falta mostrar esa clave en la grabación: los ejemplos bastan para el recorrido.
 
@@ -273,7 +273,7 @@ Duración objetivo: 8 minutos. Quien graba narra con estas palabras, o muy cerca
 | 0:00–0:50 | Nada todavía, o la primera página del informe | Grab It compra para sus clientes y hoy alguien entra a cada transportadora para mover el estado a mano. Cuando la guía cambia, la anterior se pierde. El cliente ve el portal desactualizado y el equipo se entera tarde. |
 | 0:50–1:30 | Este documento, sección 2, o `docker compose up` ya en marcha | El módulo vive en los servidores de la empresa. Recibe el evento, lo normaliza y devuelve una decisión: aplicar o retener. No reemplaza Control ni el portal. MySQL es el destino de producción; esta demostración usa SQLite, también dentro de Docker, para poder correrla sin ese servidor. |
 | 1:30–2:00 | `bun test` en la terminal | Antes del recorrido, las historias de la operación pasan solas. Si una regla se rompe, la prueba falla. |
-| 2:00–3:10 | Consola, «Registrar compra» y luego «Cargar ejemplos» | Se registra el pedido de Amazon y se leen los correos sintéticos. La guía queda asociada. Las otras tiendas aparecen sin producto o, si el texto no es un despacho, se ignoran. Nadie pega la guía a mano. |
+| 2:00–3:10 | Consola, «Registrar compra» y luego «Simular llegadas» | Se registra el pedido de Amazon y los correos sintéticos aparecen de a uno. Cada tarjeta muestra de quién llegó, qué guía se leyó y si quedó en un producto. Nadie pega la guía a mano. |
 | 3:10–4:20 | `bun run demo`, pasos 1 a 7 | Este otro recorrido, en la terminal, sigue el mismo producto por tres guías: Miami, courier y Deprisa. Un entregado en Doral deja el producto en bodega y enciende la alerta de la guía que falta. La entrega en Bogotá sí se aplica. |
 | 4:20–5:20 | Pasos 8 y 9 del mismo demo | El mismo "entregado", en Medellín, se retiene. El cliente seguiría viendo En camino. Cuando la transportadora reporta Bogotá, la prueba completa se cumple. Lo dudoso no llega al cliente. |
 | 5:20–6:20 | `bun src/cli/main.ts ficha --producto audifonos` y, si se quiere, la ficha de la consola | La ficha conserva las guías, las observaciones y las decisiones. La guía equivocada se anula con motivo; no se borra. |

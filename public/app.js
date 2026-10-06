@@ -69,14 +69,19 @@ async function openDossier(id) {
     <div class="timeline">${decisions || "<p>Todavía no hay una decisión.</p>"}</div>`;
 }
 
+let watchTimer = null;
+
 async function loadMailbox() {
   const config = await api("/api/correo");
   const form = document.querySelector("#mail-form");
   if (config.configured) {
     form.host.value = config.host;
+    form.port.value = config.port || 993;
     form.user.value = config.user;
     form.mailbox.value = config.mailbox;
-    document.querySelector("#mail-status").textContent = `Buzón guardado para ${config.user}. La clave no se muestra.`;
+    document.querySelector("#mail-status").textContent = watchTimer
+      ? `Vigilando ${config.user}. La clave no se muestra.`
+      : `Buzón guardado para ${config.user}. La clave no se muestra.`;
   }
 }
 
@@ -94,41 +99,125 @@ document.querySelector("#mail-form").addEventListener("submit", async (event) =>
   }
 });
 
-document.querySelector("#scan").addEventListener("click", async () => {
+async function readInbox() {
   const form = document.querySelector("#mail-form");
+  const data = formData(form);
+  if (data.password) await api("/api/correo", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(data) });
+  return api("/api/correo/escanear", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ sinceDays: Number(form.sinceDays.value || 21) }),
+  });
+}
+
+function reportLine(report) {
+  return `${report.examined} mensajes. ${report.created} guías nuevas, ${report.already} ya estaban, ${report.unmatched} sin producto, ${report.ignored} no eran despachos.`;
+}
+
+document.querySelector("#scan").addEventListener("click", async () => {
   const status = document.querySelector("#mail-status");
   status.textContent = "Leyendo el buzón…";
   try {
-    const data = formData(form);
-    if (data.password) await api("/api/correo", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(data) });
-    const report = await api("/api/correo/escanear", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ sinceDays: Number(form.sinceDays.value || 21) }),
-    });
-    status.textContent = `${report.examined} mensajes. ${report.created} guías asociadas, ${report.unmatched} sin producto, ${report.ignored} no eran despachos.`;
-    renderScan(report);
+    const report = await readInbox();
+    status.textContent = reportLine(report);
+    renderArrivals(report.items, true);
   } catch (error) {
     status.textContent = error.message;
   }
 });
 
-document.querySelector("#samples").addEventListener("click", async () => {
-  const report = await api("/api/correo/ejemplos", { method: "POST" });
-  document.querySelector("#mail-status").textContent = `Ejemplos locales: ${report.created} asociadas, ${report.unmatched} sin producto.`;
-  renderScan(report);
+document.querySelector("#watch").addEventListener("click", async () => {
+  const button = document.querySelector("#watch");
+  const status = document.querySelector("#mail-status");
+  if (watchTimer) {
+    clearInterval(watchTimer);
+    watchTimer = null;
+    button.textContent = "Vigilar buzón";
+    status.textContent = "Vigilancia detenida. La clave sigue en el servidor.";
+    return;
+  }
+  button.textContent = "Detener vigilancia";
+  const tick = async () => {
+    try {
+      const report = await readInbox();
+      status.textContent = `Vigilando cada 45 s. ${reportLine(report)} La clave no se muestra.`;
+      renderArrivals(report.items, false);
+    } catch (error) {
+      status.textContent = error.message;
+    }
+  };
+  await tick();
+  watchTimer = setInterval(tick, 45_000);
 });
 
-function renderScan(report) {
-  document.querySelector("#scan-results").innerHTML = report.items.map((item) => `<article class="card scan-item">
-    <div><strong>${escapeHtml(item.outcome)}</strong><div class="muted">${escapeHtml(item.subject || item.from || "")}</div></div>
-    <div></div>
-    <div>${escapeHtml(item.detail)}</div>
-    <div>${item.outcome === "sin-producto" ? `<button type="button" data-link="${escapeHtml(JSON.stringify(item.parsed))}">Vincular</button>` : ""}</div>
-  </article>`).join("");
-  document.querySelectorAll("[data-link]").forEach((button) => {
-    button.addEventListener("click", () => linkParsed(JSON.parse(button.dataset.link)));
-  });
+document.querySelector("#samples").addEventListener("click", async () => {
+  const button = document.querySelector("#samples");
+  button.disabled = true;
+  try {
+    const report = await api("/api/correo/ejemplos", { method: "POST" });
+    document.querySelector("#arrivals").innerHTML = "";
+    for (const item of report.items) {
+      prependArrival(item, true);
+      await new Promise((resolve) => setTimeout(resolve, 700));
+    }
+    document.querySelector("#mail-status").textContent = `Llegadas de ejemplo: ${report.created} nuevas, ${report.already} ya estaban, ${report.unmatched} sin producto.`;
+  } catch (error) {
+    document.querySelector("#mail-status").textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+
+const outcomeLabel = {
+  creado: "asociada",
+  "ya-estaba": "ya estaba",
+  "sin-producto": "sin producto",
+  ignorado: "no es despacho",
+};
+
+function arrivalKey(item) {
+  return [item.from, item.subject, item.parsed?.trackingNumber || item.detail].join("|");
+}
+
+function renderArrivals(items, replace) {
+  const box = document.querySelector("#arrivals");
+  if (replace) box.innerHTML = "";
+  const known = new Set([...box.querySelectorAll("[data-key]")].map((node) => node.dataset.key));
+  for (const item of items) {
+    const key = arrivalKey(item);
+    const previous = [...box.querySelectorAll("[data-key]")].find((node) => node.dataset.key === key);
+    if (previous) previous.remove();
+    prependArrival(item, !known.has(key) && !replace);
+  }
+}
+
+function prependArrival(item, isNew) {
+  const box = document.querySelector("#arrivals");
+  const read = item.parsed
+    ? `${item.parsed.store} · pedido ${item.parsed.storeOrderNumber} · guía ${item.parsed.trackingNumber}`
+    : item.detail;
+  const product = item.outcome === "creado"
+    ? "El pedido ya estaba. La guía entra al producto."
+    : item.outcome === "ya-estaba"
+      ? "Esa guía ya estaba registrada. No se duplica."
+      : item.outcome === "sin-producto"
+        ? "Ningún producto tiene ese pedido."
+        : "No se crea un envío.";
+  const tone = [item.from ? "done" : "wait", item.parsed ? "done" : "bad", item.outcome === "creado" || item.outcome === "ya-estaba" ? "done" : item.outcome === "sin-producto" ? "wait" : "bad"];
+  const article = document.createElement("article");
+  article.className = `card arrival${isNew ? " new" : ""}`;
+  article.dataset.key = arrivalKey(item);
+  article.innerHTML = `<header><strong>${escapeHtml(item.subject || item.from || "Mensaje")}</strong><span class="tag ${item.outcome === "sin-producto" ? "hold" : item.outcome === "ignorado" ? "alert" : ""}">${outcomeLabel[item.outcome]}</span></header>
+    <ol class="pipe">
+      <li class="${tone[0]}"><strong>1. Llegó</strong><span>${escapeHtml(item.from || "sin remitente")}</span></li>
+      <li class="${tone[1]}"><strong>2. Lectura</strong><span>${escapeHtml(read)}</span></li>
+      <li class="${tone[2]}"><strong>3. Producto</strong><span>${escapeHtml(product)}</span></li>
+    </ol>
+    <p class="muted">${escapeHtml(item.detail)}</p>
+    ${item.outcome === "sin-producto" ? `<button type="button">Vincular</button>` : ""}`;
+  const link = article.querySelector("button");
+  if (link) link.addEventListener("click", () => linkParsed(item.parsed));
+  box.prepend(article);
 }
 
 async function linkParsed(parsed) {

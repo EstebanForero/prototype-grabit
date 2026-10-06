@@ -48,6 +48,7 @@ describe("correo", () => {
     const amazon = await Bun.file(join(root, "fixtures/correos/amazon.txt")).text();
     const created = applyMessage(store, amazon, "Your package was shipped", "shipment-tracking@amazon.com");
     expect(created.outcome).toBe("creado");
+    expect(applyMessage(store, amazon, "Your package was shipped", "shipment-tracking@amazon.com").outcome).toBe("ya-estaba");
     const other = applyMessage(
       store,
       "From: envios@mercadolibre.com\nSubject: Enviado\n\nTu venta 2000003847563 ya va en camino.\nCódigo de seguimiento: 999001234567\nTransportadora: Servientrega\n",

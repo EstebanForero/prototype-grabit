@@ -64,12 +64,23 @@ input, select { border: 1px solid var(--line); border-radius: 8px; padding: 10px
 .dossier h3 { margin: 0 0 8px; }
 .timeline { display: grid; gap: 8px; margin-top: 12px; }
 .leg { border-left: 3px solid var(--cyan); padding-left: 10px; }
-.scan-item { display: block; }
+.connect { max-width: 68ch; margin: 0 0 16px; padding-left: 18px; color: var(--ink); }
+.connect li { margin: 6px 0; }
+.connect code { font-size: 0.95em; }
+.arrival { display: block; }
+.arrival header { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.pipe { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; list-style: none; margin: 12px 0; padding: 0; }
+.pipe li { border-left: 3px solid var(--line); padding: 6px 8px; background: #f7fafb; border-radius: 8px; }
+.pipe li strong { display: block; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+.pipe li.done { border-color: var(--ok); }
+.pipe li.wait { border-color: var(--hold); }
+.pipe li.bad { border-color: var(--alert); }
+.arrival.new { outline: 2px solid var(--cyan); }
 @media (max-width: 860px) {
   .app { grid-template-columns: 1fr; }
   aside { padding: 18px; }
   nav { grid-template-columns: 1fr 1fr 1fr; }
   main { padding: 18px; }
-  .metrics, .panel, .card { grid-template-columns: 1fr; }
+  .metrics, .panel, .card, .pipe { grid-template-columns: 1fr; }
   .card button { justify-self: start; }
 }

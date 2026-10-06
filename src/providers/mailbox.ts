@@ -15,7 +15,7 @@ export interface MailboxConfig {
 export interface ScanItem {
   subject: string;
   from: string;
-  outcome: "creado" | "sin-producto" | "ignorado";
+  outcome: "creado" | "ya-estaba" | "sin-producto" | "ignorado";
   detail: string;
   parsed?: ParsedDispatch;
 }
@@ -23,6 +23,7 @@ export interface ScanItem {
 export interface ScanReport {
   examined: number;
   created: number;
+  already: number;
   unmatched: number;
   ignored: number;
   items: ScanItem[];
@@ -43,9 +44,9 @@ export function configFromEnv(): MailboxConfig | null {
   };
 }
 
-export function publicConfig(config: MailboxConfig | null): { configured: boolean; host?: string; user?: string; mailbox?: string } {
+export function publicConfig(config: MailboxConfig | null): { configured: boolean; host?: string; port?: number; user?: string; mailbox?: string } {
   if (!config) return { configured: false };
-  return { configured: true, host: config.host, user: config.user, mailbox: config.mailbox };
+  return { configured: true, host: config.host, port: config.port, user: config.user, mailbox: config.mailbox };
 }
 
 function scrub(error: unknown, password: string): string {
@@ -85,11 +86,14 @@ export function applyMessage(store: TrackingStore, raw: string, subject = "", fr
   if ("error" in parsed) return { subject: subjectLine, from: fromLine, outcome: "ignorado", detail: parsed.error };
   const ingested = store.ingestEmail(text);
   if (ingested.shipmentId) {
+    const already = ingested.linkedExisting === true;
     return {
       subject: subjectLine,
       from: fromLine,
-      outcome: "creado",
-      detail: `Guía ${parsed.trackingNumber} asociada al pedido ${parsed.storeOrderNumber}.`,
+      outcome: already ? "ya-estaba" : "creado",
+      detail: already
+        ? `La guía ${parsed.trackingNumber} ya estaba registrada. No se crea otra.`
+        : `Guía ${parsed.trackingNumber} asociada al pedido ${parsed.storeOrderNumber}.`,
       parsed,
     };
   }
@@ -140,6 +144,7 @@ export async function scanMailbox(store: TrackingStore, config: MailboxConfig, o
   return {
     examined: items.length,
     created: items.filter((item) => item.outcome === "creado").length,
+    already: items.filter((item) => item.outcome === "ya-estaba").length,
     unmatched: items.filter((item) => item.outcome === "sin-producto").length,
     ignored: items.filter((item) => item.outcome === "ignorado").length,
     items,
