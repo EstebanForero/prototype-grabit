@@ -21,10 +21,12 @@ type FormState = {
 
 type Arrival = ScanItem & { key: string; fresh: boolean };
 
-const PRESETS: Record<string, FormState> = {
-  gmail: { host: "imap.gmail.com", port: "993", secure: true, user: "", password: "", mailbox: "INBOX", sinceDays: "21" },
-  host: { host: "127.0.0.1", port: "3143", secure: false, user: "despacho@grabit.local", password: "local", mailbox: "INBOX", sinceDays: "21" },
-  compose: { host: "buzon", port: "3143", secure: false, user: "despacho@grabit.local", password: "local", mailbox: "INBOX", sinceDays: "21" },
+const EMPTY: FormState = { host: "imap.gmail.com", port: "993", secure: true, user: "", password: "", mailbox: "INBOX", sinceDays: "21" };
+
+const PRESETS: Record<string, Pick<FormState, "host" | "port" | "secure">> = {
+  gmail: { host: "imap.gmail.com", port: "993", secure: true },
+  yahoo: { host: "imap.mail.yahoo.com", port: "993", secure: true },
+  gmx: { host: "imap.gmx.com", port: "993", secure: true },
 };
 
 const outcomeLabel: Record<Outcome, string> = {
@@ -35,7 +37,7 @@ const outcomeLabel: Record<Outcome, string> = {
 };
 
 export function Mail({ onLinked }: { onLinked: () => void }) {
-  const [form, setForm] = useState<FormState>(PRESETS.gmail);
+  const [form, setForm] = useState<FormState>(EMPTY);
   const [status, setStatus] = useState("");
   const [watching, setWatching] = useState(false);
   const [arrivals, setArrivals] = useState<Arrival[]>([]);
@@ -165,13 +167,13 @@ export function Mail({ onLinked }: { onLinked: () => void }) {
           <CardDescription>El módulo no entra a la tienda y no inyecta un archivo de prueba.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 text-sm">
-          <p>En Gmail hacen falta IMAP y una contraseña de aplicación. El servidor es imap.gmail.com, puerto 993.</p>
-          <p>Sin la cuenta de Grab It, Compose publica un servidor local: SMTP en el puerto 3025 e IMAP en el 3143. Desde <code>prototype/</code>, <code>bun run enviar</code> entrega un aviso de Amazon por SMTP a despacho@grabit.local. Si el proceso corre en el contenedor, el servidor IMAP es <code>buzon</code>. Si corre en esta máquina, es <code>127.0.0.1</code>. La clave <code>local</code> solo vale ahí: ese servidor no autentica y no es una clave de Grab It.</p>
+          <p>La sustentación usa una cuenta personal gratuita, vacía, creada solo para esto. No es Gmail Workspace ni el buzón de Grab It. En Gmail se activa la verificación en dos pasos y se crea una contraseña de aplicación. La clave normal de la cuenta no sirve. Yahoo pide lo mismo. GMX usa su clave normal después de activar IMAP en el webmail.</p>
+          <p>El aviso se redacta en ese webmail, para la misma cuenta. El cuerpo tiene que decir Amazon, el pedido 112-4455667-1234567 y la guía 1Z999AA10123456784. El proveedor lo guarda en su bandeja. Esta pantalla lo lee por IMAP. Desde <code>prototype/</code>, <code>bun run enviar</code> hace el mismo envío por SMTP si la cuenta ya está guardada.</p>
           <Separator />
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => setForm(PRESETS.gmail)}>Gmail</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => setForm(PRESETS.host)}>Esta máquina</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => setForm(PRESETS.compose)}>Contenedor</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => patch(PRESETS.gmail)}>Gmail</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => patch(PRESETS.yahoo)}>Yahoo</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => patch(PRESETS.gmx)}>GMX</Button>
           </div>
         </CardContent>
       </Card>
@@ -186,7 +188,7 @@ export function Mail({ onLinked }: { onLinked: () => void }) {
             <Field label="Días hacia atrás" value={form.sinceDays} onChange={(sinceDays) => patch({ sinceDays })} />
             <label className="flex items-center gap-2 text-sm sm:col-span-2">
               <input type="checkbox" checked={form.secure} onChange={(event) => patch({ secure: event.target.checked })} />
-              TLS. Gmail lo usa. El buzón local del puerto 3143 va sin TLS.
+              TLS. Gmail, Yahoo y GMX lo usan en el puerto 993.
             </label>
             <div className="flex flex-wrap gap-2 sm:col-span-2">
               <Button type="submit" variant="outline">Guardar y probar</Button>

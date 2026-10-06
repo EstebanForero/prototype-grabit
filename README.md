@@ -17,21 +17,19 @@ bun run demo
 bun run start
 ```
 
-La consola queda en `http://127.0.0.1:8787`. El aviso tiene que llegar al buzón: Gmail con IMAP y contraseña de aplicación, u otro servidor IMAP. «Vigilar buzón» vuelve a leer la bandeja cada 45 segundos, porque IMAP no avisa solo. La clave se guarda en `data/mailbox.json` (permiso 600) y la API no la devuelve. Una guía ya registrada no se duplica.
+La consola queda en `http://127.0.0.1:8787`. El aviso tiene que llegar a un buzón real. Para la sustentación basta una cuenta personal gratuita y vacía: Gmail (`imap.gmail.com`, 993, TLS y contraseña de aplicación), Yahoo o GMX. No hace falta Gmail Workspace. «Vigilar buzón» vuelve a leer la bandeja cada 45 segundos, porque IMAP no avisa solo. La clave se guarda en `data/mailbox.json` (permiso 600) y la API no la devuelve. Una guía ya registrada no se duplica.
 
-Con Docker, desde esta misma carpeta, el comando también levanta un servidor SMTP (3025) e IMAP (3143) solo para la demostración. No es el buzón de Grab It y no pide autenticación:
-
-```bash
-docker compose up --build
-```
-
-Con el contenedor arriba, en Buzón se elige «Contenedor» (servidor `buzon`, puerto 3143, usuario `despacho@grabit.local`, clave `local`, sin TLS). Si el proceso corre con `bun run start` en la máquina y solo el correo está en Docker, se elige «Esta máquina» (`127.0.0.1`). Después, desde `prototype/`:
+El mensaje se redacta en el webmail de esa cuenta, dirigido a ella misma, con el pedido `112-4455667-1234567` y la guía `1Z999AA10123456784`. El pedido tiene que estar registrado antes, o la guía queda sin producto. Si la cuenta ya está guardada, desde esta carpeta también se puede entregar el mismo texto por el SMTP del proveedor:
 
 ```bash
 bun run enviar
 ```
 
-Eso entrega un aviso de Amazon por SMTP. La pantalla lo ve al leer IMAP. El pedido `112-4455667-1234567` tiene que estar registrado antes, o la guía queda sin producto.
+Con Docker, desde esta misma carpeta. El contenedor no incluye un servidor de correo:
+
+```bash
+docker compose up --build
+```
 
 El perfil `mysql` solo crea la base y carga el esquema para que TI lo revise. No cambia el motor del proceso:
 
