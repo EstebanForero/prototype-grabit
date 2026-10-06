@@ -14,7 +14,7 @@ El MVP no es una maqueta. Ante una guía y los eventos de una transportadora, el
 - acepta la misma guía para varios productos y rechaza un evento repetido;
 - anula una guía mal copiada sin borrarla;
 - lee una guía desde un correo de despacho y la asocia por tienda y número de pedido;
-- ofrece una consola web para ver la cola, registrar la compra y escanear el buzón, o cargar los ejemplos si no hay cuenta.
+- ofrece una consola web para ver la cola, registrar la compra y leer el buzón por IMAP cuando el correo ya llegó.
 
 Lo que ve el cliente sigue siendo de Grab It: Comprado, Alistamiento, Enviado, En camino, Entregado. Esta consola es la del prototipo, para operar y demostrar el módulo. No reemplaza Control ni el portal.
 
@@ -23,7 +23,7 @@ Lo que ve el cliente sigue siendo de Grab It: Comprado, Alistamiento, Enviado, E
 Producción prevista: los servidores propios de Grab It. Nada del núcleo se aloja en un proveedor de nube del equipo.
 
 ```text
-Correo IMAP o ejemplo ─┐
+Correo IMAP ─────────────┐
                          ├─► lecturas ─► observaciones ─► decisión pura ─► apply / hold
 Agregador (webhook) ─────┘                                      │
                                                                 ▼
@@ -47,7 +47,8 @@ En producción el proceso vive en el mismo servidor de aplicaciones, detrás del
 | TypeScript estricto | Contrato, decisión, alertas, consola y CLI | Se copia como carpeta del módulo |
 | SQLite (`bun:sqlite`) | Base del prototipo y del contenedor | Solo para la demostración, las pruebas y el despliegue de prueba |
 | MySQL 8 | Esquema en `migrations/001_mysql.sql` | Base que ya tiene la empresa. El proceso no abre una conexión MySQL. El perfil Docker `mysql` solo carga el esquema. |
-| imapflow | Cliente IMAP del buzón de despacho | Única dependencia de paquete. La clave no se versiona ni se devuelve en la API |
+| imapflow | Cliente IMAP del buzón de despacho | Dependencia del proceso. La clave no se versiona ni se devuelve en la API |
+| React y shadcn | Consola en `web/`, compilada a estáticos | No entra en la decisión. El mismo proceso Bun sirve el resultado |
 | HMAC-SHA256 | Firma del webhook | Secreto en variable de entorno, fuera del repositorio |
 | Docker Compose | Despliegue de prueba en un comando | En los servidores de Grab It también puede quedar como unidad de systemd |
 | Control / portal | No se reimplementan | En producción consumen la decisión. La consola de este paquete es la superficie del prototipo |
@@ -60,7 +61,7 @@ En producción el proceso vive en el mismo servidor de aplicaciones, detrás del
 | `src/core/decision.ts` | Función pura: aplica o retiene. No lee la base ni la red |
 | `src/core/alerts.ts` | Las siete alertas, también puras |
 | `src/core/normalize.ts` | Traduce el estado de la transportadora a un código propio y valida la forma de la guía |
-| `src/core/contact.ts` | Próxima pregunta y el puerto que hoy usa una persona y mañana puede usar un agente |
+| `src/core/contact.ts` | Próxima pregunta. La responde una persona; el módulo no aplica ese texto solo |
 | `src/data/store.ts` | Altas, observaciones, anulaciones, consulta y ficha |
 | `src/data/schema.sql` | Esquema SQLite que el proceso crea al abrirse |
 | `migrations/001_mysql.sql` | El mismo modelo para MySQL on-premise |
@@ -69,10 +70,11 @@ En producción el proceso vive en el mismo servidor de aplicaciones, detrás del
 | `src/providers/mailbox.ts` | Conexión IMAP, escaneo y asociación. Quita la clave de los errores |
 | `src/providers/webhook.ts` | Verifica la firma y lee el aviso del agregador |
 | `src/http/server.ts` | API, archivos de la consola y webhook |
-| `public/` | Cola, ficha, alta de compra y pantalla del buzón |
+| `web/` | Consola React: cola, ficha, alta de compra y buzón. `bun run build` la deja en `public/` |
+| `src/cli/enviar.ts` | Entrega un aviso por SMTP al buzón local de la demostración |
 | `src/cli/main.ts` | Operación por consola |
 | `src/cli/demo.ts` | Recorrido filmable de las tres guías |
-| `Dockerfile`, `docker-compose.yml` | Imagen del proceso y, en un perfil aparte, MySQL solo con el esquema |
+| `Dockerfile`, `docker-compose.yml` | Imagen del proceso, servidor SMTP/IMAP de demostración y, en un perfil aparte, MySQL solo con el esquema |
 | `fixtures/correos/` | Correos sintéticos de Amazon, Mercado Libre, eBay, Alibaba y Homecenter |
 | `tests/` | Historias de operación, flujo persistido y lector de correo |
 
@@ -100,7 +102,7 @@ Desde `prototype/`:
 docker compose up --build
 ```
 
-La consola responde en `http://127.0.0.1:8787`. Los datos quedan en el volumen `seguimiento-data`. Las variables opcionales del buzón y el secreto del webhook se leen de un `.env` que no se versiona; el modelo está en `.env.example`.
+La imagen construye la consola React y la sirve en `http://127.0.0.1:8787`. Los datos quedan en el volumen `seguimiento-data`. El mismo Compose levanta `buzon`, un GreenMail local: SMTP en el puerto 3025 e IMAP en el 3143, sin autenticación. Sirve para que el aviso entre por correo durante la demostración. No es el buzón de Grab It. En la pantalla, el preset «Contenedor» apunta el proceso a `buzon:3143`, usuario `despacho@grabit.local`, clave `local` y TLS apagado. Desde el anfitrión, `bun run enviar` entrega el aviso por SMTP. Las variables opcionales del buzón real y el secreto del webhook se leen de un `.env` que no se versiona; el modelo está en `.env.example`. Si ese archivo trae el IMAP de Gmail, la pantalla usa esos datos y el servidor local queda solo como alternativa.
 
 Para ver el esquema de producción en un MySQL local, sin conectar el proceso a ese motor:
 
@@ -119,7 +121,9 @@ Estas instrucciones asumen un Linux con Bun instalado y un usuario de servicio.
 ```bash
 sudo useradd --system --create-home --home-dir /opt/grabit-seguimiento grabit
 sudo mkdir -p /opt/grabit-seguimiento
-sudo rsync -a --exclude data --exclude node_modules prototype/ /opt/grabit-seguimiento/
+(cd prototype/web && bun install && bun run build)
+sudo rsync -a --exclude data --exclude node_modules --exclude public prototype/ /opt/grabit-seguimiento/
+sudo rsync -a prototype/public/ /opt/grabit-seguimiento/public/
 sudo chown -R grabit:grabit /opt/grabit-seguimiento
 sudo -u grabit bun install --frozen-lockfile --production
 ```
@@ -197,28 +201,32 @@ Correo de despacho, después de registrar el producto con la misma tienda y el m
 bun src/cli/main.ts correo --archivo fixtures/correos/amazon.txt
 ```
 
-Servidor y consola:
+Servidor y consola. La consola se compila antes, porque el proceso solo sirve los archivos estáticos:
 
 ```bash
+cd web && bun install && bun run build && cd ..
 bun install
 AGGREGATOR_SECRET=dev-secret bun run start
 ```
 
 Abrir `http://127.0.0.1:8787`. Salud: `curl -s http://127.0.0.1:8787/health`.
 
-Cargar los cinco correos de ejemplo y leer la cola:
+Recorrido real, con el servidor de correo local ya publicado en 3025 y 3143. Primero se registra el producto. Después se guarda el IMAP del buzón local y se entrega el aviso por SMTP. El escaneo lo lee de la bandeja:
 
 ```bash
 curl -s -X POST http://127.0.0.1:8787/api/productos \
   -H 'content-type: application/json' \
   -d '{"id":"audifonos","mode":"international","customerCountry":"CO","customerCity":"Bogotá","store":"amazon","storeOrderNumber":"112-4455667-1234567"}'
-curl -s -X POST http://127.0.0.1:8787/api/correo/ejemplos
-curl -s http://127.0.0.1:8787/api/seguimiento
+curl -s -X POST http://127.0.0.1:8787/api/correo \
+  -H 'content-type: application/json' \
+  -d '{"host":"127.0.0.1","port":3143,"secure":false,"user":"despacho@grabit.local","password":"local","mailbox":"INBOX"}'
+bun run enviar
+curl -s -X POST http://127.0.0.1:8787/api/correo/escanear -H 'content-type: application/json' -d '{"sinceDays":2}'
 ```
 
-El alta también está en la pantalla «Registrar compra». «Simular llegadas» recorre los cinco ejemplos en el carril Llegó → Lectura → Producto. «Vigilar buzón» repite la lectura IMAP cada 45 segundos, porque el protocolo no empuja avisos. Un mensaje sin producto queda para vincularlo. Una guía repetida responde `ya-estaba` y no crea otro envío. `GET /api/correo` informa si hay buzón y no incluye la clave.
+Si el proceso corre dentro de Compose, el host IMAP es `buzon`, no `127.0.0.1`. `bun run enviar` sigue hablando al puerto 3025 del anfitrión. La pantalla hace lo mismo con «Guardar y probar», «Vigilar buzón» y «Leer ahora». Cada mensaje muestra Llegó, Lectura y Producto. Una guía repetida responde `ya-estaba` y no crea otro envío. Un mensaje sin producto queda para vincularlo. `GET /api/correo` informa si hay buzón y no incluye la clave.
 
-Para un buzón real, en la pantalla se escriben servidor, usuario y clave, y «Guardar y probar» abre IMAP y cierra la sesión. «Escanear correo» lee los últimos 21 días, con un tope de 50 mensajes. En Gmail el usuario activa IMAP y usa una contraseña de aplicación. No hace falta mostrar esa clave en la grabación: los ejemplos bastan para el recorrido.
+En Gmail el usuario activa IMAP y usa una contraseña de aplicación. El preset de la pantalla es `imap.gmail.com`, puerto 993, con TLS. No hace falta mostrar esa clave en la grabación. El buzón local basta para ver el mismo recorrido.
 
 Aviso firmado:
 
@@ -273,11 +281,11 @@ Duración objetivo: 8 minutos. Quien graba narra con estas palabras, o muy cerca
 | 0:00–0:50 | Nada todavía, o la primera página del informe | Grab It compra para sus clientes y hoy alguien entra a cada transportadora para mover el estado a mano. Cuando la guía cambia, la anterior se pierde. El cliente ve el portal desactualizado y el equipo se entera tarde. |
 | 0:50–1:30 | Este documento, sección 2, o `docker compose up` ya en marcha | El módulo vive en los servidores de la empresa. Recibe el evento, lo normaliza y devuelve una decisión: aplicar o retener. No reemplaza Control ni el portal. MySQL es el destino de producción; esta demostración usa SQLite, también dentro de Docker, para poder correrla sin ese servidor. |
 | 1:30–2:00 | `bun test` en la terminal | Antes del recorrido, las historias de la operación pasan solas. Si una regla se rompe, la prueba falla. |
-| 2:00–3:10 | Consola, «Registrar compra» y luego «Simular llegadas» | Se registra el pedido de Amazon y los correos sintéticos aparecen de a uno. Cada tarjeta muestra de quién llegó, qué guía se leyó y si quedó en un producto. Nadie pega la guía a mano. |
+| 2:00–3:10 | Consola, «Registrar compra», preset del buzón, «Vigilar buzón» y, en la terminal, `bun run enviar` | Se registra el pedido de Amazon. El aviso entra por SMTP al buzón y la pantalla lo lee por IMAP. La tarjeta muestra de quién llegó, qué guía se leyó y que quedó en el producto. Nadie pega la guía a mano. |
 | 3:10–4:20 | `bun run demo`, pasos 1 a 7 | Este otro recorrido, en la terminal, sigue el mismo producto por tres guías: Miami, courier y Deprisa. Un entregado en Doral deja el producto en bodega y enciende la alerta de la guía que falta. La entrega en Bogotá sí se aplica. |
 | 4:20–5:20 | Pasos 8 y 9 del mismo demo | El mismo "entregado", en Medellín, se retiene. El cliente seguiría viendo En camino. Cuando la transportadora reporta Bogotá, la prueba completa se cumple. Lo dudoso no llega al cliente. |
 | 5:20–6:20 | `bun src/cli/main.ts ficha --producto audifonos` y, si se quiere, la ficha de la consola | La ficha conserva las guías, las observaciones y las decisiones. La guía equivocada se anula con motivo; no se borra. |
-| 6:20–7:20 | Pantalla del buzón, sin teclear una clave real en cámara. Se puede mostrar que al guardar la respuesta no trae la contraseña | La misma entrada funciona contra IMAP cuando Grab It entrega el buzón. La clave queda en el servidor. Los ejemplos demuestran el lector sin esa cuenta. |
+| 6:20–7:20 | «Leer ahora» una segunda vez, sin mostrar una clave de Grab It | La misma guía responde que ya estaba y no se duplica. La clave del buzón queda en el servidor. Gmail usa la misma pantalla cuando Grab It entrega la cuenta. |
 | 7:20–8:00 | Cierre | El trabajo repetido de consultar transportadoras sale de la persona. Le queda comprar, resolver la excepción y atender lo que el módulo retiene. Sobre la línea base de 300 horas al mes, esa es la palanca del 60% de esfuerzo que el piloto tiene que medir. |
 
 No hace falta mostrar credenciales. Si un comando falla, se lee el mensaje y se vuelve a correr `bun test`: el estado de las pruebas es la evidencia de que el flujo sigue entero.
@@ -285,7 +293,7 @@ No hace falta mostrar credenciales. Si un comando falla, se lee el mensaje y se 
 ## 10. Límites conocidos
 
 - No llama a 17TRACK ni a las API de las tiendas. No hay llaves de agregador en el repositorio y no se crearon cuentas a nombre del equipo. El webhook acepta el mismo sobre, firmado, con eventos de ejemplo.
-- El lector cubre cinco formatos. IMAP está conectado: hace falta el buzón real para un escaneo en vivo. Los ejemplos no lo necesitan.
+- El lector cubre cinco formatos. El escaneo en vivo lee IMAP. Los textos de `fixtures/correos/` los usan las pruebas, no la pantalla.
 - La consulta de seguimiento arma el resultado en el proceso, después de leer las tablas. No es todavía una sola sentencia SQL.
 - La espera configurable de `delivered` existe en la política (`deliveredWaitMinutes`) y las pruebas cubren el apagado de un estado. El demo la deja en cero.
 - La consola no es Control ni el portal del cliente. En producción, Grab It sigue aplicando la decisión con su sistema. El perfil MySQL de Docker no está cableado al proceso.

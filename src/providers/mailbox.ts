@@ -44,9 +44,24 @@ export function configFromEnv(): MailboxConfig | null {
   };
 }
 
-export function publicConfig(config: MailboxConfig | null): { configured: boolean; host?: string; port?: number; user?: string; mailbox?: string } {
+export function publicConfig(config: MailboxConfig | null): { configured: boolean; host?: string; port?: number; secure?: boolean; user?: string; mailbox?: string } {
   if (!config) return { configured: false };
-  return { configured: true, host: config.host, port: config.port, user: config.user, mailbox: config.mailbox };
+  return { configured: true, host: config.host, port: config.port, secure: config.secure, user: config.user, mailbox: config.mailbox };
+}
+
+function clientOptions(config: MailboxConfig) {
+  return {
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    doSTARTTLS: config.secure ? undefined : false,
+    auth: { user: config.user, pass: config.password },
+    logger: false as const,
+    disableAutoIdle: true,
+    connectionTimeout: 12_000,
+    greetingTimeout: 12_000,
+    socketTimeout: 20_000,
+  };
 }
 
 function scrub(error: unknown, password: string): string {
@@ -55,16 +70,7 @@ function scrub(error: unknown, password: string): string {
 }
 
 export async function connectMailbox(config: MailboxConfig): Promise<void> {
-  const client = new ImapFlow({
-    host: config.host,
-    port: config.port,
-    secure: config.secure,
-    auth: { user: config.user, pass: config.password },
-    logger: false,
-    connectionTimeout: 12_000,
-    greetingTimeout: 12_000,
-    socketTimeout: 20_000,
-  });
+  const client = new ImapFlow(clientOptions(config));
   try {
     await client.connect();
     await client.logout();
@@ -109,16 +115,7 @@ export function applyMessage(store: TrackingStore, raw: string, subject = "", fr
 export async function scanMailbox(store: TrackingStore, config: MailboxConfig, options?: { sinceDays?: number; limit?: number }): Promise<ScanReport> {
   const sinceDays = options?.sinceDays ?? 21;
   const limit = Math.min(options?.limit ?? 30, 50);
-  const client = new ImapFlow({
-    host: config.host,
-    port: config.port,
-    secure: config.secure,
-    auth: { user: config.user, pass: config.password },
-    logger: false,
-    connectionTimeout: 12_000,
-    greetingTimeout: 12_000,
-    socketTimeout: 20_000,
-  });
+  const client = new ImapFlow(clientOptions(config));
   const items: ScanItem[] = [];
   try {
     await client.connect();

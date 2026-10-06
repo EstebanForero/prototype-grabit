@@ -12,12 +12,23 @@ services:
       PORT: "8787"
     volumes:
       - seguimiento-data:/data
+    depends_on:
+      - buzon
     healthcheck:
       test: ["CMD", "bun", "-e", "const respuesta = await fetch('http://127.0.0.1:8787/health'); if (!respuesta.ok) process.exit(1)"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 8s
+
+  # SMTP e IMAP de la demostración. No es el buzón de Grab It. La autenticación está apagada.
+  buzon:
+    image: greenmail/standalone:2.1.14
+    ports:
+      - "3025:3025"
+      - "3143:3143"
+    environment:
+      GREENMAIL_OPTS: "-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled"
 
   # Solo inspecciona el esquema de producción. El proceso de arriba sigue en SQLite.
   mysql:

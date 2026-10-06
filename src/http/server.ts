@@ -128,7 +128,7 @@ if (import.meta.main) {
           saveMailbox({
             host,
             port: Number(body.port ?? 993),
-            secure: body.secure !== false,
+            secure: body.secure !== false && body.secure !== "false",
             user,
             password,
             mailbox: text(body.mailbox) ?? "INBOX",
@@ -203,6 +203,14 @@ async function serveStatic(pathname: string): Promise<Response> {
   const path = normalize(join(publicDir, relative));
   if (!path.startsWith(publicDir)) return new Response("No encontrado", { status: 404 });
   const file = Bun.file(path);
-  if (!(await file.exists())) return new Response("No encontrado", { status: 404 });
+  if (!(await file.exists())) {
+    if (relative === "index.html") {
+      return new Response(
+        "Falta la consola compilada. Desde prototype/web ejecute: bun install && bun run build. La imagen de Docker la construye sola.",
+        { status: 503, headers: { "content-type": "text/plain; charset=utf-8" } },
+      );
+    }
+    return new Response("No encontrado", { status: 404 });
+  }
   return new Response(file);
 }

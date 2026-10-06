@@ -9,6 +9,8 @@
     "demo": "bun src/cli/main.ts demo",
     "seguimiento": "bun src/cli/main.ts seguimiento",
     "start": "bun src/http/server.ts",
+    "enviar": "bun src/cli/enviar.ts",
+    "consola": "bun --cwd web run build",
     "webhook": "bun src/http/server.ts",
     "check": "bun test"
   },
