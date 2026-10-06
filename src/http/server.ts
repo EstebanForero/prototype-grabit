@@ -266,7 +266,7 @@ async function serveStatic(pathname: string): Promise<Response> {
   if (!(await file.exists())) {
     if (relative === "index.html") {
       return new Response(
-        "Falta la consola compilada. Desde prototype/web ejecute: bun install && bun run build. La imagen de Docker la construye sola.",
+        "Falta la consola compilada. Desde web/ ejecute: bun install && bun run build. La imagen de Docker la construye sola.",
         { status: 503, headers: { "content-type": "text/plain; charset=utf-8" } },
       );
     }

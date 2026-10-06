@@ -1,6 +1,6 @@
 # Documentación técnica del MVP
 
-Paquete del capítulo 8 del proyecto de Operaciones TI. El informe académico (capítulos 6 y 7) describe el proceso TO-BE y la arquitectura on-premise. Este documento explica cómo está construido el prototipo y cómo una tercera persona lo despliega, lo ejecuta y lo prueba. El video lo graba otra persona; el guion está al final.
+Paquete del capítulo 8 del proyecto de Operaciones TI. El informe académico describe el proceso TO-BE y la arquitectura on-premise, y queda fuera de este repositorio. Este archivo es la documentación técnica: cómo está construido el prototipo y cómo una tercera persona lo despliega, lo configura, lo ejecuta y lo prueba. El [README](../README.md) de la raíz apunta aquí y deja el arranque corto. Los comandos se ejecutan en esa raíz, la carpeta que contiene `package.json`, `web/` y `docs/`. El video lo graba otra persona; el guion está al final.
 
 ## 1. Qué demuestra
 
@@ -68,15 +68,24 @@ En producción el proceso vive en el mismo servidor de aplicaciones, detrás del
 | `src/providers/email.ts` | Saca tienda, pedido, guía y transportadora de un correo |
 | `src/providers/mime.ts` | Texto de un mensaje simple o multipart |
 | `src/providers/mailbox.ts` | Conexión IMAP, escaneo y asociación. Quita la clave de los errores |
+| `src/providers/smtp.ts` | Entrega el aviso de Amazon por el SMTP del proveedor. Quita la clave del error |
 | `src/providers/webhook.ts` | Verifica la firma y lee el aviso del agregador |
-| `src/http/server.ts` | API, archivos de la consola y webhook |
-| `web/` | Consola React: cola, ficha, alta de compra y buzón. `bun run build` la deja en `public/` |
+| `src/http/server.ts` | API, archivos de la consola, vigilancia del buzón y webhook |
+| `web/` | Frontend React. `bun run build` dentro de `web/`, o `bun run consola` desde la raíz, lo deja en `public/` |
 | `src/cli/enviar.ts` | Entrega el aviso por el SMTP del proveedor. No imprime la clave |
 | `src/cli/main.ts` | Operación por consola |
 | `src/cli/demo.ts` | Recorrido filmable de las tres guías |
 | `Dockerfile`, `docker-compose.yml` | Imagen del proceso y, en un perfil aparte, MySQL solo con el esquema. El correo es el del proveedor |
 | `fixtures/correos/` | Correos sintéticos de Amazon, Mercado Libre, eBay, Alibaba y Homecenter |
 | `tests/` | Historias de operación, flujo persistido y lector de correo |
+
+### Consola
+
+El frontend está en `web/`: React 19, Vite, Tailwind y componentes al estilo de shadcn. El proceso Bun no renderiza la interfaz. Sirve el resultado de la compilación, que cae en `public/` y no se versiona. Si `public/index.html` no existe, la raíz HTTP responde 503 con la instrucción de compilar. La imagen de Docker hace ese build en la etapa `consola` y copia `public/` al proceso final.
+
+Tres pestañas: **Cola de hoy**, **Buzón** y **Registrar compra**. La cola muestra el estado y abre la ficha. Registrar compra da de alta el producto. Buzón guarda la cuenta, prueba IMAP, envía el aviso, enciende la vigilancia de 45 segundos y lista las extracciones en curso y las ejecutadas. El historial sale de `GET /api/correo/procesos` y queda en la tabla SQLite `extraction_runs`. El esquema MySQL no tiene esa tabla.
+
+En desarrollo se pueden dejar los dos procesos: `bun run start` en el puerto 8787 y `cd web && bun run dev`. Vite publica la interfaz en el puerto 5173 y reenvía `/api` al proceso.
 
 ## 5. Cómo decide
 
@@ -96,18 +105,20 @@ Hay dos formas. La de prueba es Docker y no pide Bun en el anfitrión. La de los
 
 ### 6.1 Despliegue de prueba con Docker
 
-Desde `prototype/`:
+Desde la raíz de este repositorio:
 
 ```bash
-docker compose up --build
+docker compose -p grabit-seguimiento up --build -d
 ```
 
-La imagen construye la consola React y la sirve en `http://127.0.0.1:8787`. Los datos quedan en el volumen `seguimiento-data`. Compose no levanta un servidor de correo. El aviso viaja por el SMTP y el IMAP del proveedor. Las variables del buzón y el secreto del webhook se leen de un `.env` que no se versiona; el modelo está en `.env.example`. La clave es una contraseña de aplicación, o la clave normal solo en GMX, y no entra al repositorio.
+La imagen construye la consola React y la sirve en `http://127.0.0.1:8787`. Los datos quedan en el volumen `seguimiento-data`. Compose no levanta un servidor de correo. El aviso viaja por el SMTP y el IMAP del proveedor. Las variables del buzón y el secreto del webhook se leen de un `.env` que no se versiona; el modelo está en `.env.example` y en la sección 6.3. La clave es una contraseña de aplicación, o la clave normal solo en GMX, y no entra al repositorio.
+
+Para bajar solo este proyecto: `docker compose -p grabit-seguimiento down`.
 
 Para ver el esquema de producción en un MySQL local, sin conectar el proceso a ese motor:
 
 ```bash
-docker compose --profile mysql up --build
+docker compose -p grabit-seguimiento --profile mysql up --build -d
 ```
 
 La raíz es `grabit-local` y la base se llama `seguimiento`. Sirve para que TI inspeccione `migrations/001_mysql.sql`. No es el almacén del módulo.
@@ -121,9 +132,9 @@ Estas instrucciones asumen un Linux con Bun instalado y un usuario de servicio.
 ```bash
 sudo useradd --system --create-home --home-dir /opt/grabit-seguimiento grabit
 sudo mkdir -p /opt/grabit-seguimiento
-(cd prototype/web && bun install && bun run build)
-sudo rsync -a --exclude data --exclude node_modules --exclude public prototype/ /opt/grabit-seguimiento/
-sudo rsync -a prototype/public/ /opt/grabit-seguimiento/public/
+(cd web && bun install && bun run build)
+sudo rsync -a --exclude data --exclude node_modules --exclude public ./ /opt/grabit-seguimiento/
+sudo rsync -a public/ /opt/grabit-seguimiento/public/
 sudo chown -R grabit:grabit /opt/grabit-seguimiento
 sudo -u grabit bun install --frozen-lockfile --production
 ```
@@ -173,9 +184,27 @@ WantedBy=multi-user.target
 
 El adaptador en vivo de 17TRACK no está conectado. Hace falta la llave que crea Grab It. Mientras tanto, el webhook acepta el mismo sobre que enviaría el agregador y las pruebas usan eventos de ejemplo. Cambiar de agregador no toca la función de decisión: solo el normalizador.
 
+### 6.3 Configuración
+
+El modelo versionado es `.env.example`. La copia local es `.env` y no entra al repositorio. Docker lee ese archivo si existe (`env_file` con `required: false`) y además fija `GRABIT_DB`, `MAILBOX_FILE` y `PORT` para el volumen `/data`.
+
+| Variable | Si no se define | Efecto |
+| --- | --- | --- |
+| `PORT` | `8787` | Puerto del proceso |
+| `GRABIT_DB` | `data/seguimiento.sqlite` | SQLite del proceso. `bun run demo` usa `data/demo.sqlite` y no toca esta |
+| `MAILBOX_FILE` | `data/mailbox.json` | JSON del buzón guardado en la pantalla, modo 600 |
+| `AGGREGATOR_SECRET` | `dev-secret` | Clave HMAC del encabezado `x-aggregator-signature` |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_SECURE`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_MAILBOX` | sin buzón hasta que la pantalla lo guarde | Si host, usuario y clave vienen en el entorno, el proceso los usa al arrancar y no lee el archivo |
+| `SMTP_HOST`, `SMTP_PORT` | se deduce del host IMAP | Fuerza el servidor del botón «Enviar aviso» y de `bun run enviar` |
+| `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_TO` | la cuenta guardada, y el destinatario es esa misma cuenta | Solo los lee `bun run enviar` |
+
+La pantalla configura el buzón sin tocar el archivo a mano. «Guardar y probar» escribe `mailbox.json`. Una clave en blanco en un guardado posterior conserva la anterior. Ninguna respuesta JSON incluye la clave. Gmail y Yahoo exigen contraseña de aplicación. Gmail: `imap.gmail.com:993` y, para el envío, `smtp.gmail.com:587`. Yahoo: `imap.mail.yahoo.com` y `smtp.mail.yahoo.com`. GMX: `imap.gmx.com` y `mail.gmx.com`, con la clave normal después de activar IMAP. La pantalla ofrece esos tres presets.
+
+La vigilancia no es un temporizador del navegador. `POST /api/correo/vigilar` la deja en el proceso, cada 45 segundos. Reiniciar el proceso la apaga. Las filas de `extraction_runs` siguen en la SQLite del prototipo.
+
 ## 7. Ejecutar
 
-Desde `prototype/`:
+Desde la raíz de este repositorio:
 
 ```bash
 bun test
@@ -254,7 +283,6 @@ bun src/cli/main.ts anotar --envio <id> --texto "Salió hoy" --aplicar shipped
 ## 8. Probar
 
 ```bash
-cd prototype
 bun test
 ```
 
@@ -276,7 +304,7 @@ No hay guías reales de Grab It en este repositorio. Los correos de `fixtures/co
 
 ## 9. Guion para la grabación
 
-Duración objetivo: 8 minutos. Quien graba narra con estas palabras, o muy cerca. La pantalla muestra la consola en el navegador y, un momento, la terminal en `prototype/`. No se muestra una clave real.
+Duración objetivo: 8 minutos. Quien graba narra con estas palabras, o muy cerca. La pantalla muestra la consola en el navegador y, un momento, la terminal en la raíz de este repositorio. No se muestra una clave real.
 
 | Minuto | En pantalla | Narración |
 | --- | --- | --- |
