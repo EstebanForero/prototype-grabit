@@ -1,0 +1,11 @@
+node_modules/
+data/*.sqlite
+data/*.sqlite-*
+data/mailbox.json
+.env
+*.env
+.DS_Store
+dist/
+web/node_modules/
+web/dist/
+public/
