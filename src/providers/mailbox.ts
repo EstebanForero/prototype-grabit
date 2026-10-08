@@ -71,6 +71,7 @@ function scrub(error: unknown, password: string): string {
 
 export async function connectMailbox(config: MailboxConfig): Promise<void> {
   const client = new ImapFlow(clientOptions(config));
+  client.on("error", () => undefined);
   try {
     await client.connect();
     await client.logout();
@@ -116,6 +117,7 @@ export async function scanMailbox(store: TrackingStore, config: MailboxConfig, o
   const sinceDays = options?.sinceDays ?? 21;
   const limit = Math.min(options?.limit ?? 30, 50);
   const client = new ImapFlow(clientOptions(config));
+  client.on("error", () => undefined);
   const items: ScanItem[] = [];
   try {
     await client.connect();
