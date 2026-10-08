@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/lib/api";
-import type { ExtractionRun, MailPublic, Outcome, ParsedDispatch, ScanItem } from "@/lib/types";
+import type { ExtractionRun, MailPublic, Outcome, ParsedDispatch, ScanItem, ScanReport } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type FormState = {
@@ -31,7 +31,7 @@ const PRESETS: Record<string, Pick<FormState, "host" | "port" | "secure">> = {
 
 const outcomeLabel: Record<Outcome, string> = {
   creado: "asociada",
-  "ya-estaba": "ya estaba",
+  "ya-estaba": "Ya estaba",
   "sin-producto": "sin producto",
   ignorado: "no es despacho",
 };
@@ -44,6 +44,7 @@ export function Mail({ onLinked }: { onLinked: () => void }) {
   const [runs, setRuns] = useState<ExtractionRun[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [freshId, setFreshId] = useState<string | null>(null);
+  const [samples, setSamples] = useState<ScanItem[]>([]);
   const formRef = useRef(form);
   const seen = useRef<Set<string> | null>(null);
   formRef.current = form;
@@ -196,6 +197,23 @@ export function Mail({ onLinked }: { onLinked: () => void }) {
     }
   }
 
+  async function loadSamples() {
+    setBusy(true);
+    setStatus("Procesando los correos de ejemplo…");
+    try {
+      const report = await api<ScanReport>("/api/correo/ejemplos", { method: "POST" });
+      setSamples(report.items);
+      setStatus(
+        `Ejemplos: ${report.examined} revisados, ${report.created} asociados, ` +
+        `${report.already} ya estaban, ${report.unmatched} sin producto, ${report.ignored} ignorados.`,
+      );
+    } catch (cause) {
+      setStatus(cause instanceof Error ? cause.message : "No se pudieron procesar los ejemplos.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const running = runs.filter((run) => run.status === "running");
   const finished = runs.filter((run) => run.status !== "running");
   const selected = runs.find((run) => run.id === selectedId) ?? finished[0];
@@ -217,12 +235,11 @@ export function Mail({ onLinked }: { onLinked: () => void }) {
       <Card>
         <CardHeader>
           <CardTitle>Cuenta de la sustentación</CardTitle>
-          <CardDescription>El módulo no entra a la tienda y no inyecta un archivo de prueba.</CardDescription>
-        </CardHeader>
+          <CardDescription>Con IMAP real o, sin cuenta externa, con los correos de ejemplo de fixtures/.</CardDescription>        </CardHeader>
         <CardContent className="flex flex-col gap-3 text-sm">
           <p>La sustentación usa una cuenta personal gratuita, vacía, creada solo para esto. No es Gmail Workspace ni el buzón de Grab It. En Gmail se activa la verificación en dos pasos y se crea una contraseña de aplicación. La clave normal de la cuenta no sirve. Yahoo pide lo mismo. GMX usa su clave normal después de activar IMAP en el webmail.</p>
           <p>El aviso de Amazon, con el pedido 112-4455667-1234567 y la guía 1Z999AA10123456784, sale desde aquí con «Enviar aviso». El proveedor lo guarda en su bandeja y la extracción lo lee por IMAP. La lista de abajo separa la lectura que está en curso de las que ya terminaron. Recargar la página no borra ese historial.</p>
-          <Separator />
+          <Button type="button" variant="outline" className="self-start" onClick={() => void loadSamples()} disabled={busy}>Cargar correos de ejemplo</Button>          <Separator />
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => patch(PRESETS.gmail)}>Gmail</Button>
             <Button type="button" variant="outline" size="sm" onClick={() => patch(PRESETS.yahoo)}>Yahoo</Button>
@@ -269,6 +286,40 @@ export function Mail({ onLinked }: { onLinked: () => void }) {
       {cards.map((item) => (
         <ArrivalCard key={item.key} item={item} onLinked={onLinked} onStatus={setStatus} />
       ))}
+      {(() => {
+        const indexed = samples.map((item, index) => ({ item, index }));
+        const matched = indexed.filter(({ item }) => item.outcome === "creado" || item.outcome === "ya-estaba");
+        const others = indexed.filter(({ item }) => item.outcome !== "creado" && item.outcome !== "ya-estaba");
+        return (
+          <>
+            {matched.map(({ item, index }) => (
+              <ArrivalCard
+                key={`sample-${index}`}
+                item={{ ...item, key: `sample-${index}`, fresh: true }}
+                onLinked={onLinked}
+                onStatus={setStatus}
+              />
+            ))}
+            {others.length > 0 && (
+              <details className="rounded-md border bg-card p-3">
+                <summary className="cursor-pointer text-sm font-medium">
+                  {others.length} correos de ejemplo sin producto registrado
+                </summary>
+                <div className="mt-3 flex flex-col gap-4">
+                  {others.map(({ item, index }) => (
+                    <ArrivalCard
+                      key={`sample-${index}`}
+                      item={{ ...item, key: `sample-${index}`, fresh: false }}
+                      onLinked={onLinked}
+                      onStatus={setStatus}
+                    />
+                  ))}
+                </div>
+              </details>
+            )}
+          </>
+        );
+  })()}
     </div>
   );
 }
