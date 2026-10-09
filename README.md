@@ -121,12 +121,6 @@ Para la demostración, el correo del pedido sale de n8n, que corre en un contene
 
 Ninguna clave va en este repositorio. La cuenta del buzón y su contraseña de aplicación se escriben en n8n y en la pestaña Buzón, y no se guardan en archivos versionados.
 
-### Configurar la cuenta del correo
-
-1. **n8n, nodo Send Email.** Abra el workflow y haga doble clic en el nodo. Cree o edite la credencial SMTP: `User` es la cuenta del buzón, `Password` es su contraseña de aplicación(generada en myaccount.google.com/apppasswords), `Host` es `smtp.gmail.com`, puerto `465` con SSL/TLS activado. En `From Email` y `To Email` ponga las cuentas que utilice. Guarde y pulse Execute workflow, y compruebe que el correo llegó a la bandeja. Si deja la credencial de otro correo y solo cambia el `To`, el correo también llega, pero el remitente que muestra la tarjeta de la consola sería ese otro correo. Por eso conviene cambiar también la credencial. El workflow utilizado está adjuntado en el repositorio con el nombre 'correo de despacho workflow.json'.
-  
-3. **Módulo, pestaña Buzón.** Entre a `http://127.0.0.1:8787` y abra Buzón. Escriba el usuario y la contraseña de aplicación de esa cuenta (puede ser la misma que en n8n o una distinta). Pulse Guardar y probar: debe decir «Conexión correcta». Ponga «Días hacia atrás» en `1` para que solo lea los correos recientes. Al guardar, el módulo sustituye la cuenta anterior; no hace falta borrar nada.
-
 Pasos:
 
 1. **Crear y encender n8n.** Solo la primera vez:
@@ -138,6 +132,7 @@ Pasos:
 Si el puerto 5678 está ocupado o el nombre `n8n` ya existe, el comando falla: `docker ps -a --filter "name=n8n"` muestra si ya hay un contenedor. Espere unos 15 segundos y abra `http://localhost:5678`. En el primer acceso n8n pide crear una cuenta de propietario local (nombre, correo y contraseña). Esa cuenta solo existe en este n8n y no tiene relación con la cuenta del buzón. El nombre del volumen debe ser exactamente `n8n_data`; con otro nombre, n8n arranca vacío.
    
 2. **Importar el workflow.** En n8n cree un workflow nuevo, abra el menú `⋯` de la esquina superior derecha y elija **Import from File**. Seleccione `correo de despacho workflow.json` de la raíz del repositorio. Los nodos que necesitan credenciales aparecen con una advertencia hasta que se configura la del paso siguiente.
+  - Antes del paso siguiente, se recomienda generar una clave de aplicación en el correo electronico que se usará(por medio de myaccount.google.com/apppasswords). 
    
 3. **Configurar el nodo Send Email.** Haga doble clic en el nodo. Cree o edite la credencial SMTP: `User` es la cuenta del buzón, `Password` es su contraseña de aplicación, `Host` es `smtp.gmail.com`, puerto `465` con SSL/TLS activado. En `From Email` y `To Email` ponga las cuentas que utilice. Guarde y pulse Execute workflow, y compruebe que el correo llegó a la bandeja. Si deja la credencial de otro correo y solo cambia el `To`, el correo también llega, pero el remitente que muestra la tarjeta de la consola sería ese otro correo. Por eso conviene cambiar también la credencial.
   
