@@ -114,3 +114,66 @@ docker compose -p grabit-seguimiento --profile mysql up --build -d
 La raíz de ese MySQL es `grabit-local` y la base se llama `seguimiento`.
 
 En los servidores de Grab It el mismo paquete puede quedar como unidad de systemd. Los pasos, el archivo de entorno y la unidad están en la sección 6 de [docs/documentacion-tecnica.md](docs/documentacion-tecnica.md).
+
+## Demostración con n8n
+
+Para la demostración, el correo del pedido sale de n8n, que corre en un contenedor aparte, y el módulo lo lee por IMAP desde la cuenta del buzón. n8n no forma parte del `docker-compose.yml`: se creó con `docker run`, escucha en `http://localhost:5678` y guarda sus workflows y credenciales en el volumen `n8n_data`. Ese contenedor no tiene política de reinicio, así que se enciende a mano después de apagar el equipo.
+
+Ninguna clave va en este repositorio. La cuenta del buzón y su contraseña de aplicación se escriben en n8n y en la pestaña Buzón, y no se guardan en archivos versionados.
+
+### Configurar la cuenta del correo
+
+1. **n8n, nodo Send Email.** Abra el workflow y haga doble clic en el nodo. Cree o edite la credencial SMTP: `User` es la cuenta del buzón, `Password` es su contraseña de aplicación(generada en myaccount.google.com/apppasswords), `Host` es `smtp.gmail.com`, puerto `465` con SSL/TLS activado. En `From Email` y `To Email` ponga las cuentas que utilice. Guarde y pulse Execute workflow, y compruebe que el correo llegó a la bandeja. Si deja la credencial de otro correo y solo cambia el `To`, el correo también llega, pero el remitente que muestra la tarjeta de la consola sería ese otro correo. Por eso conviene cambiar también la credencial. El workflow utilizado está adjuntado en el repositorio con el nombre 'correo de despacho workflow.json'.
+  
+3. **Módulo, pestaña Buzón.** Entre a `http://127.0.0.1:8787` y abra Buzón. Escriba el usuario y la contraseña de aplicación de esa cuenta (puede ser la misma que en n8n o una distinta). Pulse Guardar y probar: debe decir «Conexión correcta». Ponga «Días hacia atrás» en `1` para que solo lea los correos recientes. Al guardar, el módulo sustituye la cuenta anterior; no hace falta borrar nada.
+
+Pasos:
+
+1. **Crear y encender n8n.** Solo la primera vez:
+
+   ```powershell
+   docker run -d --name n8n -p 5678:5678 -v n8n_data:/home/node/.n8n docker.n8n.io/n8nio/n8n
+   ```
+
+Si el puerto 5678 está ocupado o el nombre `n8n` ya existe, el comando falla: `docker ps -a --filter "name=n8n"` muestra si ya hay un contenedor. Espere unos 15 segundos y abra `http://localhost:5678`. En el primer acceso n8n pide crear una cuenta de propietario local (nombre, correo y contraseña). Esa cuenta solo existe en este n8n y no tiene relación con la cuenta del buzón. El nombre del volumen debe ser exactamente `n8n_data`; con otro nombre, n8n arranca vacío.
+   
+2. **Importar el workflow.** En n8n cree un workflow nuevo, abra el menú `⋯` de la esquina superior derecha y elija **Import from File**. Seleccione `correo de despacho workflow.json` de la raíz del repositorio. Los nodos que necesitan credenciales aparecen con una advertencia hasta que se configura la del paso siguiente.
+   
+3. **Configurar el nodo Send Email.** Haga doble clic en el nodo. Cree o edite la credencial SMTP: `User` es la cuenta del buzón, `Password` es su contraseña de aplicación, `Host` es `smtp.gmail.com`, puerto `465` con SSL/TLS activado. En `From Email` y `To Email` ponga las cuentas que utilice. Guarde y pulse Execute workflow, y compruebe que el correo llegó a la bandeja. Si deja la credencial de otro correo y solo cambia el `To`, el correo también llega, pero el remitente que muestra la tarjeta de la consola sería ese otro correo. Por eso conviene cambiar también la credencial.
+  
+4. **Registrar el producto en el módulo.** Entre a `http://127.0.0.1:8787`, abra Registrar compra y registre el producto cuyo pedido lleva el correo del workflow. El pedido tiene que estar registrado antes de que el correo se lea; si no, la tarjeta queda como «sin producto».
+  
+5. **Conectar el buzón.** En la pestaña Buzón escriba el usuario y la contraseña de aplicación de esa cuenta (puede ser la misma que en n8n o una distinta). Pulse Guardar y probar: debe decir «Conexión correcta». Ponga «Días hacia atrás» en `1` para que solo lea los correos recientes. Al guardar, el módulo sustituye la cuenta anterior; no hace falta borrar nada.
+  
+6. **Probar el recorrido.** En n8n pulse Execute workflow para enviar el correo. En Buzón pulse «Leer ahora», o «Vigilar buzón» para que el módulo revise cada 45 segundos. Cuando la extracción termina, la tarjeta muestra Llegó, Lectura y Producto, y el producto queda con su guía. Si se lee otra vez, la guía responde `ya-estaba` y no se duplica.
+
+### Volver a encender después de apagar el equipo
+
+Los datos no se pierden: los volúmenes de Docker (el del módulo y el de n8n) sobreviven a un apagado. Solo hay que volver a encender los contenedores.
+
+1. **Abrir Docker Desktop.** Espere a que abajo a la izquierda diga **Engine running**. Sin eso, ningún comando de Docker funciona.
+2. **Levantar el módulo.** En la carpeta del proyecto:
+
+   ```powershell
+   docker compose -p grabit-seguimiento up -d
+   ```
+
+   Sin `--build`, porque la imagen ya está compilada. Con `restart: unless-stopped`, el contenedor puede haber arrancado solo al abrirse Docker; en ese caso el comando no hace nada y está bien. Compruebe:
+
+   ```powershell
+   docker compose -p grabit-seguimiento ps
+   curl.exe -s http://127.0.0.1:8787/health
+   ```
+
+   Debe aparecer `Up (healthy)` y `{"ok":true,...}`.
+3. **Levantar n8n.**
+
+   ```powershell
+   docker start n8n
+   ```
+
+   Espere unos 15 segundos y abra `http://localhost:5678`. Los workflows y las credenciales siguen ahí. Para que arranque solo en el futuro:
+
+   ```powershell
+   docker update --restart unless-stopped n8n
+   ```
