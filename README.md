@@ -178,8 +178,8 @@ Los datos no se pierden: los volúmenes de Docker (el del módulo y el de n8n) s
 
 | Dato | Valor |
 | --- | --- |
-| Enlace | [<ENLACE AL VIDEO>](https://www.youtube.com/watch?v=Q6-VDQ_lRcY) |
-| Duración | <05:03> |
+| Enlace | (https://www.youtube.com/watch?v=Q6-VDQ_lRcY) |
+| Duración | 05:03 |
 | Contenido | Problemática, funcionalidad y cinco pruebas funcionales con narración |
 
 Pruebas que se muestran, en orden:
