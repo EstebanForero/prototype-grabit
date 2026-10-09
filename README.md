@@ -172,3 +172,20 @@ Los datos no se pierden: los volúmenes de Docker (el del módulo y el de n8n) s
    ```powershell
    docker update --restart unless-stopped n8n
    ```
+
+
+## Video de demostración
+
+| Dato | Valor |
+| --- | --- |
+| Enlace | [<ENLACE AL VIDEO>](https://www.youtube.com/watch?v=Q6-VDQ_lRcY) |
+| Duración | <05:03> |
+| Contenido | Problemática, funcionalidad y cinco pruebas funcionales con narración |
+
+Pruebas que se muestran, en orden:
+
+1. El estado se aplica solo.
+2. Entrega en Medellín (la decisión se retiene).
+3. Entrega en Bogotá (el estado se aplica).
+4. Una firma inválida, HTTP 401.
+5. El mismo correo no duplica la guía.
