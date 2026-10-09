@@ -1,0 +1,113 @@
+{
+  "name": "Tienda simulada - correo de despacho",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1b65a0f3-4cbc-4c73-9eb7-b440fcde5e6e",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        144,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1",
+              "name": "pedido",
+              "value": "112-4455667-1234567",
+              "type": "string"
+            },
+            {
+              "id": "f2",
+              "name": "guia",
+              "value": "1Z999AA10123456784",
+              "type": "string"
+            },
+            {
+              "id": "f3",
+              "name": "transportadora",
+              "value": "UPS",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e7cc4096-eb3d-40b3-a907-4abbded20f62",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        368,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "seguimiento-grabit@gmail.com",
+        "toEmail": "usuariodeejemplo800@gmail.com",
+        "subject": "Your package was shipped",
+        "html": "=<div style=\"background:#f3f6f7;padding:16px;font-family:'Fira Sans',Arial,Helvetica,sans-serif;\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#ffffff;border:2px solid #6cc4bc;border-radius:12px;border-collapse:separate;\"><tr><td style=\"padding:24px 32px 8px 32px;\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"font-size:20px;font-weight:700;color:#1f2933;\">Your package was shipped</td><td align=\"right\"><span style=\"background:#e3ebee;color:#1f2933;font-size:14px;font-weight:600;padding:5px 12px;border-radius:8px;\">Ya estaba</span></td></tr></table></td></tr><tr><td style=\"padding:12px 24px;\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"8\" style=\"border-collapse:separate;\"><tr><td width=\"33%\" valign=\"top\" style=\"background:#f3f7f6;border:1px solid #a9cfc8;border-radius:10px;padding:18px;\"><div style=\"font-size:14px;font-weight:700;color:#1f2933;margin-bottom:6px;\">1. LLEGÓ</div><div style=\"font-size:16px;color:#1f2933;line-height:1.6;\">shipment-tracking@amazon.com</div></td><td width=\"33%\" valign=\"top\" style=\"background:#f3f7f6;border:1px solid #a9cfc8;border-radius:10px;padding:18px;\"><div style=\"font-size:14px;font-weight:700;color:#1f2933;margin-bottom:6px;\">2. LECTURA</div><div style=\"font-size:16px;color:#1f2933;line-height:1.6;\">amazon · pedido {{ $json.pedido }} · guía {{ $json.guia }}</div></td><td width=\"33%\" valign=\"top\" style=\"background:#f3f7f6;border:1px solid #a9cfc8;border-radius:10px;padding:18px;\"><div style=\"font-size:14px;font-weight:700;color:#1f2933;margin-bottom:6px;\">3. PRODUCTO</div><div style=\"font-size:16px;color:#1f2933;line-height:1.6;\">Esa guía ya estaba registrada. No se duplica.</div></td></tr></table></td></tr><tr><td style=\"padding:4px 32px 24px 32px;font-size:15px;color:#616e7c;\">La guía {{ $json.guia }} ya estaba registrada. No se crea otra.</td></tr></table></div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        592,
+        -80
+      ],
+      "id": "acba6157-0737-48a9-ae6a-9cb7dc877cdd",
+      "name": "Send an Email",
+      "webhookId": "992d05a1-c7fb-4234-9668-1b64e1691962",
+      "credentials": {
+        "smtp": {
+          "id": "fCoZ3UIBoLDIUmzv",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2f4d9b3a-d66a-4955-a91b-1e09e7b17094",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a5d12d1f0329062f1a8b44b87ab9eeb58a5eeb8c0bc55e4b8cc3db8f04edaaa1"
+  },
+  "nodeGroups": [],
+  "id": "0FQXIogtuJnh1iZ2",
+  "tags": []
+}
