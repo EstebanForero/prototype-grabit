@@ -1,6 +1,6 @@
 # Documentación técnica del MVP
 
-Paquete del capítulo 8 del proyecto de Operaciones TI. El informe académico describe el proceso TO-BE y la arquitectura on-premise, y queda fuera de este repositorio. Este archivo es la documentación técnica: cómo está construido el prototipo y cómo una tercera persona lo despliega, lo configura, lo ejecuta y lo prueba. El [README](../README.md) de la raíz apunta aquí y deja el arranque corto. Los comandos se ejecutan en esa raíz, la carpeta que contiene `package.json`, `web/` y `docs/`. El video lo graba otra persona; el guion está al final.
+Paquete del capítulo 8 del proyecto de Operaciones TI. El informe académico describe el proceso TO-BE y la arquitectura on-premise, y queda fuera de este repositorio. Este archivo es la documentación técnica: cómo está construido el prototipo y cómo una tercera persona lo despliega, lo configura, lo ejecuta y lo prueba. El [README](../README.md) de la raíz apunta aquí y deja el arranque corto. Los comandos se ejecutan en esa raíz, la carpeta que contiene `package.json`, `web/` y `docs/`. El guion de la grabación está al final; el video publicado, una versión corta de 5 minutos, está enlazado en el README.
 
 ## 1. Qué demuestra
 
@@ -62,6 +62,8 @@ En producción el proceso vive en el mismo servidor de aplicaciones, detrás del
 | `src/core/alerts.ts` | Las siete alertas, también puras |
 | `src/core/normalize.ts` | Traduce el estado de la transportadora a un código propio y valida la forma de la guía |
 | `src/core/contact.ts` | Próxima pregunta. La responde una persona; el módulo no aplica ese texto solo |
+| `src/core/events.ts` | Avisos que salen de cada decisión y del cambio de alertas |
+| `src/core/places.ts` | Compara país y ciudad sin depender de tildes ni mayúsculas. Reconoce los alias de Colombia y Estados Unidos |
 | `src/data/store.ts` | Altas, observaciones, anulaciones, consulta y ficha |
 | `src/data/schema.sql` | Esquema SQLite que el proceso crea al abrirse |
 | `migrations/001_mysql.sql` | El mismo modelo para MySQL on-premise |
@@ -77,19 +79,20 @@ En producción el proceso vive en el mismo servidor de aplicaciones, detrás del
 | `src/cli/demo.ts` | Recorrido filmable de las tres guías |
 | `Dockerfile`, `docker-compose.yml` | Imagen del proceso y, en un perfil aparte, MySQL solo con el esquema. El correo es el del proveedor |
 | `fixtures/correos/` | Correos sintéticos de Amazon, Mercado Libre, eBay, Alibaba y Homecenter |
+| `correo de despacho workflow.json` | Workflow de n8n que envía el correo de Amazon de la demostración. Los pasos están en el README |
 | `tests/` | Historias de operación, flujo persistido y lector de correo |
 
 ### Consola
 
 El frontend está en `web/`: React 19, Vite, Tailwind y componentes al estilo de shadcn. El proceso Bun no renderiza la interfaz. Sirve el resultado de la compilación, que cae en `public/` y no se versiona. Si `public/index.html` no existe, la raíz HTTP responde 503 con la instrucción de compilar. La imagen de Docker hace ese build en la etapa `consola` y copia `public/` al proceso final.
 
-Tres pestañas: **Cola de hoy**, **Buzón** y **Registrar compra**. La cola muestra el estado y abre la ficha. Registrar compra da de alta el producto. Buzón guarda la cuenta, prueba IMAP, envía el aviso, enciende la vigilancia de 45 segundos y lista las extracciones en curso y las ejecutadas. El historial sale de `GET /api/correo/procesos` y queda en la tabla SQLite `extraction_runs`. El esquema MySQL no tiene esa tabla.
+Tres pestañas: **Cola de hoy**, **Buzón** y **Registrar compra**. La cola muestra el estado y abre la ficha. Registrar compra da de alta el producto. Buzón guarda la cuenta, prueba IMAP, envía el aviso, enciende la vigilancia de 45 segundos y lista las extracciones en curso y las ejecutadas. El historial sale de `GET /api/correo/procesos` y queda en la tabla SQLite `extraction_runs`, que conserva las 40 más recientes. El esquema MySQL no tiene esa tabla. «Cargar correos de ejemplo» procesa los cinco textos de `fixtures/correos/` con `POST /api/correo/ejemplos`, sin cuenta externa. Una tarjeta «sin producto» permite vincular el pedido con `POST /api/correo/vincular`, que registra el producto y le asocia la guía leída.
 
 En desarrollo se pueden dejar los dos procesos: `bun run start` en el puerto 8787 y `cd web && bun run dev`. Vite publica la interfaz en el puerto 5173 y reenvía `/api` al proceso.
 
 ## 5. Cómo decide
 
-Una observación automática se aplica solo si se cumplen las cinco condiciones: la fuente es una transportadora o una tienda, el envío está activo, no hay alerta de destino, de revisión o de guía no encontrada, el evento es posterior al registro y hubo movimiento real. Una etiqueta creada no mueve el estado.
+El módulo solo propone un estado que esté por delante del actual; un evento viejo no hace retroceder el producto. Una observación automática se aplica solo si se cumplen las cinco condiciones: la fuente es una transportadora o una tienda, el envío está activo, no hay alerta de destino, de revisión o de guía no encontrada, el evento es posterior al registro de la guía y hubo movimiento real. Además, la política (`autoApply`) tiene que permitir la aplicación automática de ese estado. Una etiqueta creada no mueve el estado.
 
 `delivered` suma la prueba completa: el envío iba al cliente, es el último tramo que todavía cuenta, el país coincide y la ciudad también cuando la transportadora la informa, no queda ninguna alerta abierta, todas las cajas hacia el cliente llegaron y se cumplió la espera configurada. Si falla una sola, la decisión se guarda como retenida y el estado del producto no cambia.
 
@@ -111,7 +114,7 @@ Desde la raíz de este repositorio:
 docker compose -p grabit-seguimiento up --build -d
 ```
 
-La imagen construye la consola React y la sirve en `http://127.0.0.1:8787`. Los datos quedan en el volumen `seguimiento-data`. Compose no levanta un servidor de correo. El aviso viaja por el SMTP y el IMAP del proveedor. Las variables del buzón y el secreto del webhook se leen de un `.env` que no se versiona; el modelo está en `.env.example` y en la sección 6.3. La clave es una contraseña de aplicación, o la clave normal solo en GMX, y no entra al repositorio.
+La imagen construye la consola React y la sirve en `http://127.0.0.1:8787`. Los datos quedan en el volumen `seguimiento-data`. Compose no levanta un servidor de correo. El aviso viaja por el SMTP y el IMAP del proveedor. Las variables del buzón y el secreto del webhook se leen de un `.env` que no se versiona; el modelo está en `.env.example` y en la sección 6.3. La clave es una contraseña de aplicación, o la clave normal solo en GMX, y no entra al repositorio. Si `.env` no define `AGGREGATOR_SECRET`, la imagen trae `dev-secret`; hay que cambiarlo antes de publicar el webhook. El `env_file` con `required: false` pide Docker Compose 2.24 o superior. Con `-p grabit-seguimiento`, Docker nombra el volumen `grabit-seguimiento_seguimiento-data`.
 
 Para bajar solo este proyecto: `docker compose -p grabit-seguimiento down`.
 
@@ -127,17 +130,18 @@ La raíz es `grabit-local` y la base se llama `seguimiento`. Sirve para que TI i
 
 Estas instrucciones asumen un Linux con Bun instalado y un usuario de servicio.
 
-1. Instalar Bun y crear el usuario y el directorio.
+1. Instalar Bun 1.4 y crear el usuario y el directorio. Los comandos se ejecutan desde la raíz del repositorio, salvo el último, que entra al directorio instalado.
 
 ```bash
 sudo useradd --system --create-home --home-dir /opt/grabit-seguimiento grabit
-sudo mkdir -p /opt/grabit-seguimiento
 (cd web && bun install && bun run build)
-sudo rsync -a --exclude data --exclude node_modules --exclude public ./ /opt/grabit-seguimiento/
+sudo rsync -a --exclude .git --exclude .env --exclude data --exclude node_modules --exclude public ./ /opt/grabit-seguimiento/
 sudo rsync -a public/ /opt/grabit-seguimiento/public/
 sudo chown -R grabit:grabit /opt/grabit-seguimiento
-sudo -u grabit bun install --frozen-lockfile --production
+cd /opt/grabit-seguimiento && sudo -u grabit "$(command -v bun)" install --frozen-lockfile --production
 ```
+
+La unidad del paso 3 llama a `/usr/local/bin/bun`. Si `command -v bun` devuelve otra ruta, por ejemplo `~/.bun/bin/bun` del instalador oficial, copie el binario a `/usr/local/bin` o cambie `ExecStart`.
 
 2. Crear el archivo de entorno, con permisos del usuario de servicio. No se versiona.
 
@@ -195,7 +199,7 @@ El modelo versionado es `.env.example`. La copia local es `.env` y no entra al r
 | `MAILBOX_FILE` | `data/mailbox.json` | JSON del buzón guardado en la pantalla, modo 600 |
 | `AGGREGATOR_SECRET` | `dev-secret` | Clave HMAC del encabezado `x-aggregator-signature` |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_SECURE`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_MAILBOX` | sin buzón hasta que la pantalla lo guarde | Si host, usuario y clave vienen en el entorno, el proceso los usa al arrancar y no lee el archivo |
-| `SMTP_HOST`, `SMTP_PORT` | se deduce del host IMAP | Fuerza el servidor del botón «Enviar aviso» y de `bun run enviar` |
+| `SMTP_HOST`, `SMTP_PORT` | se deduce del host IMAP, en el puerto 587 | Fuerza el servidor del botón «Enviar aviso» y de `bun run enviar`. `.env.example` trae `smtp.gmail.com`: con Yahoo o GMX hay que vaciarlo o cambiarlo. El puerto 465 usa TLS directo; cualquier otro, STARTTLS |
 | `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_TO` | la cuenta guardada, y el destinatario es esa misma cuenta | Solo los lee `bun run enviar` |
 
 La pantalla configura el buzón sin tocar el archivo a mano. «Guardar y probar» escribe `mailbox.json`. Una clave en blanco en un guardado posterior conserva la anterior. Ninguna respuesta JSON incluye la clave. Gmail y Yahoo exigen contraseña de aplicación. Gmail: `imap.gmail.com:993` y, para el envío, `smtp.gmail.com:587`. Yahoo: `imap.mail.yahoo.com` y `smtp.mail.yahoo.com`. GMX: `imap.gmx.com` y `mail.gmx.com`, con la clave normal después de activar IMAP. La pantalla ofrece esos tres presets.
@@ -209,20 +213,22 @@ Desde la raíz de este repositorio:
 ```bash
 bun test
 bun run demo
-bun src/cli/main.ts seguimiento
-bun src/cli/main.ts ficha --producto audifonos
+GRABIT_DB=data/demo.sqlite bun src/cli/main.ts seguimiento
+GRABIT_DB=data/demo.sqlite bun src/cli/main.ts ficha --producto audifonos
 ```
 
-`demo` borra `data/demo.sqlite` y lo vuelve a crear. El uso manual escribe en `data/seguimiento.sqlite`, o en la ruta de `GRABIT_DB`.
+`demo` borra `data/demo.sqlite` y lo vuelve a crear. El resto de la CLI lee `data/seguimiento.sqlite`, o la ruta de `GRABIT_DB`; por eso los dos comandos de después del demo apuntan a la base del demo. Sin esa variable, la ficha de `audifonos` solo existe si se registró antes en la consola.
 
 Alta manual de un producto nacional y su guía:
 
 ```bash
 bun src/cli/main.ts producto --id taladro --modo national --pais CO --ciudad Medellín --tienda mercadolibre --pedido 2000003847563
 bun src/cli/main.ts envio --producto taladro --guia 999001234567 --transportadora Servientrega
-bun src/cli/main.ts evento --guia 999001234567 --codigo picked_up --texto "Recogido" --pais CO --en 2026-10-04T15:00:00.000Z
+bun src/cli/main.ts evento --guia 999001234567 --codigo picked_up --texto "Recogido" --pais CO
 bun src/cli/main.ts seguimiento
 ```
+
+Sin `--en`, el evento toma la hora actual. Una fecha anterior al registro de la guía se retiene a propósito («hay eventos anteriores al registro»), así que un ejemplo con fecha fija deja de aplicarse con el paso de los días.
 
 Correo de despacho, después de registrar el producto con la misma tienda y el mismo pedido:
 
@@ -262,7 +268,8 @@ No hace falta mostrar la clave en la grabación. La cuenta se conecta en la cons
 Aviso firmado:
 
 ```bash
-body='{"trackingNumber":"999001234567","events":[{"timeIso":"2026-10-04T18:00:00.000Z","description":"En camino","status":"InTransit","country":"CO","destinationCountry":"CO"}]}'
+now=$(date -u +%Y-%m-%dT%H:%M:%S.000Z)
+body='{"trackingNumber":"999001234567","events":[{"timeIso":"'"$now"'","description":"En camino","status":"InTransit","country":"CO","destinationCountry":"CO"}]}'
 sig=$(printf '%s' "$body" | openssl dgst -sha256 -hmac dev-secret | awk '{print $2}')
 curl -s -X POST http://127.0.0.1:8787/webhooks/aggregator \
   -H "content-type: application/json" \
@@ -270,7 +277,7 @@ curl -s -X POST http://127.0.0.1:8787/webhooks/aggregator \
   --data "$body"
 ```
 
-Una firma incorrecta responde 401. El mismo cuerpo, repetido, no crea otra observación.
+El evento lleva la hora actual por la misma razón que en la CLI. Una firma incorrecta responde 401. El mismo cuerpo, repetido, no crea otra observación.
 
 Envío sin guía:
 
@@ -286,25 +293,29 @@ bun src/cli/main.ts anotar --envio <id> --texto "Salió hoy" --aplicar shipped
 bun test
 ```
 
-Tienen que pasar 22 pruebas.
+Tienen que pasar 22 pruebas, en tres archivos: `tests/stories.test.ts` (14), `tests/flow.test.ts` (5) y `tests/mail.test.ts` (3).
 
-| Prueba | Qué fija |
-| --- | --- |
-| Historia 1 y su variante | Tres guías, y también el caso en que el courier llega hasta la puerta |
-| Historia 2 | Una guía nacional. La etiqueta creada no es un despacho |
-| Historia 3 | El contacto no aplica el estado; la persona sí, en la misma acción |
-| Historia 4 | El silencio depende del modo y una nota reinicia el plazo |
-| Historia 5 | Aduana u otra excepción no se convierte en estado |
-| Historia 7 | Guía no encontrada a las 48 horas, y destino que no cuadra |
-| Historia 8 y su variante | Entregado en otra ciudad, y entrega parcial |
-| Flujo persistido | Tres productos en una guía, anulación, correo, webhook |
-| Correo | Texto multipart, asociación por pedido y los cinco ejemplos sin sobre aparte |
+| Prueba | Cuántas | Qué fija |
+| --- | --- | --- |
+| Historia 1 y su variante | 2 | Tres guías, y también el caso en que el courier llega hasta la puerta |
+| Historia 2 | 1 | Una guía nacional. La etiqueta creada no es un despacho |
+| Historia 3 | 1 | El contacto no aplica el estado; la persona sí, en la misma acción |
+| Historia 4 | 1 | El silencio depende del modo y una nota reinicia el plazo |
+| Historia 5 | 1 | Aduana u otra excepción no se convierte en estado |
+| Historia 7 | 1 | Guía no encontrada a las 48 horas, y destino que no cuadra |
+| Historia 8 y su variante | 2 | Entregado en otra ciudad, y entrega parcial |
+| Reglas generales | 3 | Un evento viejo no retrocede el estado, la política puede apagar la aplicación automática y un envío anulado no produce alertas |
+| Normalización | 2 | Etiqueta creada frente a movimiento real, y un número de pedido que no pasa por guía |
+| Flujo persistido | 5 | Una guía para varios productos, anulación, correo de Amazon, webhook firmado y las cinco tiendas |
+| Correo | 3 | Texto multipart, asociación por pedido y los cinco ejemplos sin sobre aparte |
+
+No hay una prueba con el número de historia 6.
 
 No hay guías reales de Grab It en este repositorio. Los correos de `fixtures/correos/` son sintéticos, escritos para probar el lector. Sustituirlos por correos reales anonimizados no cambia el comando.
 
 ## 9. Guion para la grabación
 
-Duración objetivo: 8 minutos. Quien graba narra con estas palabras, o muy cerca. La pantalla muestra la consola en el navegador y, un momento, la terminal en la raíz de este repositorio. No se muestra una clave real.
+Duración objetivo: 8 minutos. El video publicado (05:03, enlazado en el README) es una versión corta: muestra cinco pruebas funcionales e incluye la firma inválida del webhook, que este guion no filma. Quien graba narra con estas palabras, o muy cerca. La pantalla muestra la consola en el navegador y, un momento, la terminal en la raíz de este repositorio. No se muestra una clave real.
 
 | Minuto | En pantalla | Narración |
 | --- | --- | --- |
@@ -313,8 +324,8 @@ Duración objetivo: 8 minutos. Quien graba narra con estas palabras, o muy cerca
 | 1:30–2:00 | `bun test` en la terminal | Antes del recorrido, las historias de la operación pasan solas. Si una regla se rompe, la prueba falla. |
 | 2:00–3:10 | Consola: Registrar compra, Guardar y probar, Enviar aviso, y la lista En curso / Ejecutadas | Se registra el pedido de Amazon. El aviso sale desde la misma pantalla, por el SMTP del proveedor. No se contrató Workspace ni el agregador. La extracción en curso pasa a ejecutada y la tarjeta muestra de quién llegó, qué guía se leyó y que quedó en el producto. |
 | 3:10–4:20 | `bun run demo`, pasos 1 a 7 | Este otro recorrido, en la terminal, sigue el mismo producto por tres guías: Miami, courier y Deprisa. Un entregado en Doral deja el producto en bodega y enciende la alerta de la guía que falta. La entrega en Bogotá sí se aplica. |
-| 4:20–5:20 | Pasos 8 y 9 del mismo demo | El mismo "entregado", en Medellín, se retiene. El cliente seguiría viendo En camino. Cuando la transportadora reporta Bogotá, la prueba completa se cumple. Lo dudoso no llega al cliente. |
-| 5:20–6:20 | `bun src/cli/main.ts ficha --producto audifonos` y, si se quiere, la ficha de la consola | La ficha conserva las guías, las observaciones y las decisiones. La guía equivocada se anula con motivo; no se borra. |
+| 4:20–5:20 | Pasos 8 y 9 del mismo demo | Otro producto, un monitor nacional para Bogotá. Su "entregado" llega desde Medellín y se retiene. El cliente seguiría viendo En camino. Cuando la transportadora reporta Bogotá, la prueba completa se cumple. Lo dudoso no llega al cliente. |
+| 5:20–6:20 | `GRABIT_DB=data/demo.sqlite bun src/cli/main.ts ficha --producto audifonos` y, si se quiere, la ficha de la consola | La ficha conserva las tres guías, las observaciones y las decisiones. Nada se borra: una guía equivocada se anula con motivo y queda en la ficha. |
 | 6:20–7:20 | «Leer ahora» una segunda vez, sin mostrar la contraseña de aplicación | La misma guía responde que ya estaba y no se duplica. La clave queda en el servidor. En Grab It el buzón es el que la empresa ya tiene. |
 | 7:20–8:00 | Cierre | El trabajo repetido de consultar transportadoras sale de la persona. Le queda comprar, resolver la excepción y atender lo que el módulo retiene. Sobre la línea base de 300 horas al mes, esa es la palanca del 60% de esfuerzo que el piloto tiene que medir. |
 
@@ -323,7 +334,7 @@ No hace falta mostrar credenciales. Si un comando falla, se lee el mensaje y se 
 ## 10. Límites conocidos
 
 - No llama a 17TRACK ni a las API de las tiendas. No hay llaves de agregador en el repositorio y no se crearon cuentas a nombre del equipo. El webhook acepta el mismo sobre, firmado, con eventos de ejemplo.
-- El lector cubre cinco formatos. El escaneo en vivo lee IMAP. Los textos de `fixtures/correos/` los usan las pruebas, no la pantalla.
+- El lector cubre cinco formatos. El escaneo en vivo lee IMAP. Los textos de `fixtures/correos/` los usan las pruebas y el botón «Cargar correos de ejemplo» de la pantalla. El de Amazon tiene el mismo pedido y la misma guía que «Enviar aviso» y el workflow de n8n, así que, si se carga antes, el correo real responde `ya-estaba`.
 - La consulta de seguimiento arma el resultado en el proceso, después de leer las tablas. No es todavía una sola sentencia SQL.
 - La espera configurable de `delivered` existe en la política (`deliveredWaitMinutes`) y las pruebas cubren el apagado de un estado. El demo la deja en cero.
 - La consola no es Control ni el portal del cliente. En producción, Grab It sigue aplicando la decisión con su sistema. El perfil MySQL de Docker no está cableado al proceso.
