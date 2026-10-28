@@ -10,9 +10,11 @@ import {
   type MailboxConfig,
 } from "../providers/mailbox.ts";
 import { sendDispatch } from "../providers/smtp.ts";
+import { track17FromEnv, track17Status } from "../providers/track17.ts";
 import { parseAggregatorWebhook, signatureMatches } from "../providers/webhook.ts";
 
 const secret = process.env.AGGREGATOR_SECRET ?? "dev-secret";
+const track17 = track17FromEnv();
 const port = Number(process.env.PORT ?? 8787);
 const database = process.env.GRABIT_DB ?? "data/seguimiento.sqlite";
 const publicDir = join(import.meta.dir, "../../public");
@@ -137,7 +139,7 @@ if (import.meta.main) {
       const url = new URL(request.url);
       try {
         if (request.method === "GET" && (url.pathname === "/health" || url.pathname === "/api/salud")) {
-          return Response.json({ ok: true, service: "grabit-seguimiento" });
+          return Response.json({ ok: true, service: "grabit-seguimiento", track17: track17Status(track17) });
         }
         if (request.method === "GET" && (url.pathname === "/seguimiento" || url.pathname === "/api/seguimiento")) {
           return Response.json(store.listTracking());
