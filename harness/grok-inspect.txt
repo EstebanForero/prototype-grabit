@@ -1,0 +1,99 @@
+
+  Environment
+  └ Version: 1.0.70 [stable]
+  └ CWD: /workspace/runs/ciclo2/caso1-amazon-es
+  └ Git root: /workspace/runs/ciclo2/caso1-amazon-es/
+  └ Project trusted: yes
+
+  Project Instructions (1)
+  └ /workspace/runs/ciclo2/caso1-amazon-es/AGENTS.md (project, ~426 tokens)
+
+  Permissions
+  └ Source: (none)
+  └ 0 loaded, 0 skipped
+
+  Login Policy
+  └ disable_api_key_auth: (unset)
+  └ force_login_team_uuid: (none)
+  └ api_key_auth_disabled: false
+
+  Skills (34)
+  └ registrar-correo-despacho      project
+  └ hyperframes                    user
+  └ hyperframes-animation          user
+  └ hyperframes-audio              user
+  └ hyperframes-cli                user
+  └ hyperframes-core               user
+  └ hyperframes-creative           user
+  └ hyperframes-keyframes          user
+  └ hyperframes-registry           user
+  └ hyperframes-studio             user
+  └ media-use                      user
+  └ product-launch-video           user
+  └ build-with-ai                  bundled
+  └ code-review                    bundled
+  └ create-skill                   bundled
+  └ create-workflow                bundled
+  └ design                         bundled
+  └ docx                           bundled
+  └ execute-plan                   bundled
+  └ game-assets                    bundled
+  └ imagine                        bundled [collides with /imagine → /bundled:imagine]
+  └ implement                      bundled
+  └ learn                          bundled
+  └ long-running-background-tasks  bundled
+  └ pdf                            bundled
+  └ pptx                           bundled
+  └ pr-babysit                     bundled
+  └ resume-claude                  bundled
+  └ resume-codex                   bundled
+  └ resume-cursor                  bundled
+  └ review                         bundled
+  └ skill-design-principles        bundled
+  └ statusline                     bundled
+  └ threejs-frame-conventions      bundled
+
+  Agents (3)
+  └ general-purpose  builtin
+  └ explore          builtin
+  └ plan             builtin
+
+  Plugins (None)
+
+  Marketplaces (None)
+
+  MCP Servers (None)
+  └ see `grok mcp add --help`
+
+  LSP Servers (None)
+
+  Hooks (2)
+  └ command  project
+  └ command  project
+
+  Config Sources
+  └ User: /home/box/.grok/config.toml
+  └ Managed: /home/box/.grok/managed_config.toml (empty)
+  └ Requirements: /home/box/.grok/requirements.toml (empty)
+  └ Project: (none)
+
+  Experiments (None)
+
+  Harness Compatibility
+  └ cursor
+    └ skills     on   (default)
+    └ rules      on   (default)
+    └ agents     on   (default)
+    └ mcps       on   (default)
+    └ hooks      on   (default)
+    └ sessions   on   (default)
+  └ claude
+    └ skills     on   (default)
+    └ rules      on   (default)
+    └ agents     on   (default)
+    └ mcps       on   (default)
+    └ hooks      on   (default)
+    └ sessions   on   (default)
+  └ codex
+    └ sessions   on   (default)
+

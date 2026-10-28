@@ -1,0 +1,35 @@
+{
+ "caso": "caso5-homecenter-guia",
+ "ciclo1_tests_sin_carpeta_temporal": true,
+ "ciclo2_reenviado_ok": true,
+ "c1_extraccion_exacta": true,
+ "c2_sin_regresion": true,
+ "c3_sin_protegidos": true,
+ "c4_alcance": true,
+ "c5_sin_peor_error": true,
+ "terminado": true,
+ "obtenido": {
+  "store": "homecenter",
+  "storeOrderNumber": "771234",
+  "trackingNumber": "7012345678",
+  "carrier": "Coordinadora"
+ },
+ "esperado": {
+  "store": "homecenter",
+  "storeOrderNumber": "771234",
+  "trackingNumber": "7012345678",
+  "carrier": "Coordinadora"
+ },
+ "cambiados": [
+  "harness/memoria/progreso.md",
+  "src/providers/email.ts",
+  "tests/mail.test.ts",
+  "harness/casos/caso5-homecenter-guia.json"
+ ],
+ "tests": [
+  " 23 pass",
+  " 0 fail",
+  " 102 expect() calls",
+  "Ran 23 tests across 3 files. [156.00ms]"
+ ]
+}

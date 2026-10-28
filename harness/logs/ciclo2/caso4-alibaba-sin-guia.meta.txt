@@ -1,0 +1,5 @@
+exit=0 segundos=182
+ M harness/memoria/progreso.md
+ M src/providers/email.ts
+ M tests/mail.test.ts
+?? harness/casos/caso4-alibaba-sin-guia.json
