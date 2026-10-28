@@ -1,0 +1,39 @@
+diff --git a/src/providers/email.ts b/src/providers/email.ts
+index 7d84fa6..0a0c078 100644
+--- a/src/providers/email.ts
++++ b/src/providers/email.ts
+@@ -25,10 +25,12 @@ export function parseDispatchEmail(raw: string): ParsedDispatch | { error: strin
+   const order = raw.match(store.order);
+   if (!order?.[1]) return { error: `No se encontró el número de pedido de ${store.store}.` };
+   const tracking = text.match(
+-    /(?:tracking(?:\s+id|\s+number)?|gu[ií]a|c[oó]digo de seguimiento|rastreo)\s*[:#]?\s*([A-Z0-9-]{8,40})/i,
++    /(?:tracking(?:\s+id|\s+number)?|gu[ií]a|c[oó]digo de seguimiento|n[uú]mero de seguimiento|rastreo)\s*[:#]?\s*([A-Z0-9-]{8,40})/i,
+   );
+   if (!tracking?.[1]) return { error: "El correo no trae una guía." };
+-  const carrier = text.match(/(?:carrier|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i);
++  const carrier = text.match(
++    /(?:carrier|transportista|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i,
++  );
+   return {
+     store: store.store,
+     storeOrderNumber: order[1],
+diff --git a/tests/flow.test.ts b/tests/flow.test.ts
+index 3bd6de8..2995eb1 100644
+--- a/tests/flow.test.ts
++++ b/tests/flow.test.ts
+@@ -152,4 +152,15 @@ describe("flujo persistido", () => {
+       expect("error" in parsed).toBe(false);
+     }
+   });
++
++  test("el correo en español de Amazon trae tienda, pedido, guía y transportista", async () => {
++    const raw = await Bun.file(join(root, "harness/casos/caso1-amazon-es.txt")).text();
++    const parsed = parseDispatchEmail(raw);
++    expect(parsed).toEqual({
++      store: "amazon",
++      storeOrderNumber: "113-9876543-7654321",
++      trackingNumber: "TBA301234567890",
++      carrier: "Amazon Logistics",
++    });
++  });
+ });

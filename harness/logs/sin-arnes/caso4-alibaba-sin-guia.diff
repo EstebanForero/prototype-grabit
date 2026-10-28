@@ -1,0 +1,22 @@
+diff --git a/tests/mail.test.ts b/tests/mail.test.ts
+index c8a11c2..a1bb743 100644
+--- a/tests/mail.test.ts
++++ b/tests/mail.test.ts
+@@ -3,6 +3,7 @@ import { mkdtempSync } from "node:fs";
+ import { tmpdir } from "node:os";
+ import { join } from "node:path";
+ import { TrackingStore } from "../src/data/store.ts";
++import { parseDispatchEmail } from "../src/providers/email.ts";
+ import { applyMessage } from "../src/providers/mailbox.ts";
+ import { messageText } from "../src/providers/mime.ts";
+ 
+@@ -72,4 +73,9 @@ describe("correo", () => {
+     expect(stores).toEqual(["amazon", "mercadolibre", "ebay", "alibaba", "homecenter"]);
+     store.close();
+   });
++
++  test("un aviso de Alibaba con la guía pendiente no inventa número ni transportadora", async () => {
++    const raw = await Bun.file(join(root, "harness/casos/caso4-alibaba-sin-guia.txt")).text();
++    expect(parseDispatchEmail(raw)).toEqual({ error: "El correo no trae una guía." });
++  });
+ });
