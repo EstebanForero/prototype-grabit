@@ -19,6 +19,6 @@ START=$(date +%s)
 echo "exit=$? segundos=$(( $(date +%s) - START ))" > "$REPO/harness/logs/$FASE/$CASO.meta.txt"
 ( cd "$RUN" && git diff > "$REPO/harness/logs/$FASE/$CASO.diff"; git status --porcelain >> "$REPO/harness/logs/$FASE/$CASO.meta.txt" )
 bun "$REPO/harness/evaluar.ts" "$RUN" "$CASO" "$REPO/harness/esperados" > "$REPO/harness/logs/$FASE/$CASO.eval.json"
-grep -E '"terminado"|c[1-5]_' "$REPO/harness/logs/$FASE/$CASO.eval.json" | tr -d '\n '; echo " <- $FASE/$CASO"
+grep -E '"terminado"|c[1-5]_|ciclo[12]_' "$REPO/harness/logs/$FASE/$CASO.eval.json" | tr -d '\n '; echo " <- $FASE/$CASO"
 # Control de contaminación: la corrida no debe haber mirado fuera de su copia.
 if grep -qE 'prototype-grabit|runs/esperados|harness/esperados' "$REPO/harness/logs/$FASE/$CASO.grok.jsonl"; then echo "CONTAMINADA" >> "$REPO/harness/logs/$FASE/$CASO.meta.txt"; echo "  !! CONTAMINADA $FASE/$CASO"; fi

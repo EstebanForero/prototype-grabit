@@ -1,5 +1,7 @@
 {
  "caso": "caso4-alibaba-sin-guia",
+ "ciclo1_tests_sin_carpeta_temporal": false,
+ "ciclo2_reenviado_ok": true,
  "c1_extraccion_exacta": false,
  "c2_sin_regresion": true,
  "c3_sin_protegidos": true,
@@ -25,6 +27,6 @@
   " 23 pass",
   " 0 fail",
   " 104 expect() calls",
-  "Ran 23 tests across 3 files. [150.00ms]"
+  "Ran 23 tests across 3 files. [140.00ms]"
  ]
 }

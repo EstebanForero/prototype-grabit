@@ -14,7 +14,7 @@ Lo usa el equipo de compras de Grab It; ocurre cada vez que una tienda cambia su
 1. El correo del caso da exactamente la extracción correcta.
 2. Los 5 correos de `fixtures/correos/` siguen dando lo mismo y `bun test` pasa.
 3. No tocaste archivos protegidos.
-4. Solo cambiaste `src/providers/email.ts`, `tests/` y `harness/`.
+4. Solo cambiaste `src/providers/email.ts`, `tests/` y `harness/`. Las pruebas no leen `harness/casos/` (carpeta temporal); el correo va copiado dentro de la prueba.
 5. Nunca asignas una guía a otra tienda u otro pedido. Si dudas, devuelve `{ error }`.
 
 ## Nunca

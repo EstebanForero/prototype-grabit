@@ -1,0 +1,35 @@
+{
+ "caso": "caso3-ml-reenviado",
+ "ciclo1_tests_sin_carpeta_temporal": false,
+ "ciclo2_reenviado_ok": false,
+ "c1_extraccion_exacta": true,
+ "c2_sin_regresion": true,
+ "c3_sin_protegidos": true,
+ "c4_alcance": true,
+ "c5_sin_peor_error": true,
+ "terminado": true,
+ "obtenido": {
+  "store": "mercadolibre",
+  "storeOrderNumber": "2000009988776",
+  "trackingNumber": "240012345678",
+  "carrier": "Interrapidisimo"
+ },
+ "esperado": {
+  "store": "mercadolibre",
+  "storeOrderNumber": "2000009988776",
+  "trackingNumber": "240012345678",
+  "carrier": "Interrapidisimo"
+ },
+ "cambiados": [
+  "harness/memoria/progreso.md",
+  "src/providers/email.ts",
+  "tests/mail.test.ts",
+  "harness/casos/caso3-ml-reenviado.json"
+ ],
+ "tests": [
+  " 23 pass",
+  " 0 fail",
+  " 102 expect() calls",
+  "Ran 23 tests across 3 files. [152.00ms]"
+ ]
+}

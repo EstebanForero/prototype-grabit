@@ -1,0 +1,58 @@
+diff --git a/harness/memoria/progreso.md b/harness/memoria/progreso.md
+index 1fe9485..5009526 100644
+--- a/harness/memoria/progreso.md
++++ b/harness/memoria/progreso.md
+@@ -1,2 +1,3 @@
+ # Bitácora de progreso (memoria entre sesiones)
+ Formato: fecha · caso · cambio · resultado.
++2026-10-28 · caso5-homecenter-guia · si no hay etiqueta de transportadora, se lee el nombre entre paréntesis justo después de la guía · VERIFICACION OK
+diff --git a/src/providers/email.ts b/src/providers/email.ts
+index 7d84fa6..cb04399 100644
+--- a/src/providers/email.ts
++++ b/src/providers/email.ts
+@@ -28,11 +28,14 @@ export function parseDispatchEmail(raw: string): ParsedDispatch | { error: strin
+     /(?:tracking(?:\s+id|\s+number)?|gu[ií]a|c[oó]digo de seguimiento|rastreo)\s*[:#]?\s*([A-Z0-9-]{8,40})/i,
+   );
+   if (!tracking?.[1]) return { error: "El correo no trae una guía." };
+-  const carrier = text.match(/(?:carrier|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i);
++  const labeledCarrier = text.match(/(?:carrier|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i);
++  const afterTracking = text.slice((tracking.index ?? 0) + tracking[0].length);
++  const parenCarrier = afterTracking.match(/^\s*\(([A-Za-z][A-Za-z0-9 .'-]{1,40})\)/);
++  const carrier = (labeledCarrier?.[1] ?? parenCarrier?.[1])?.trim();
+   return {
+     store: store.store,
+     storeOrderNumber: order[1],
+     trackingNumber: tracking[1].trim(),
+-    carrier: carrier?.[1]?.trim(),
++    carrier,
+   };
+ }
+diff --git a/tests/mail.test.ts b/tests/mail.test.ts
+index c8a11c2..1d1080b 100644
+--- a/tests/mail.test.ts
++++ b/tests/mail.test.ts
+@@ -3,6 +3,7 @@ import { mkdtempSync } from "node:fs";
+ import { tmpdir } from "node:os";
+ import { join } from "node:path";
+ import { TrackingStore } from "../src/data/store.ts";
++import { parseDispatchEmail } from "../src/providers/email.ts";
+ import { applyMessage } from "../src/providers/mailbox.ts";
+ import { messageText } from "../src/providers/mime.ts";
+ 
+@@ -59,6 +60,16 @@ describe("correo", () => {
+     store.close();
+   });
+ 
++  test("lee pedido, guía y transportadora entre paréntesis de Homecenter", async () => {
++    const raw = await Bun.file(join(root, "harness/casos/caso5-homecenter-guia.txt")).text();
++    expect(parseDispatchEmail(raw)).toEqual({
++      store: "homecenter",
++      storeOrderNumber: "771234",
++      trackingNumber: "7012345678",
++      carrier: "Coordinadora",
++    });
++  });
++
+   test("los cinco ejemplos se reconocen aunque el sobre venga solo dentro del archivo", async () => {
+     const dir = mkdtempSync(join(tmpdir(), "grabit-mail-"));
+     const store = TrackingStore.open(join(dir, "test.sqlite"), { now: () => "2026-10-04T12:00:00.000Z" });

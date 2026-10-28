@@ -23,4 +23,10 @@ const c3 = protegidos.length === 0;
 const c4 = fueraDeAlcance.length === 0;
 const grave = !("error" in obtenido) && "store" in obtenido && ("error" in esperado || obtenido.store !== esperado.store || obtenido.storeOrderNumber !== esperado.storeOrderNumber || obtenido.trackingNumber !== esperado.trackingNumber);
 const c5 = !grave;
-console.log(JSON.stringify({ caso, c1_extraccion_exacta: c1, c2_sin_regresion: c2, c3_sin_protegidos: c3, c4_alcance: c4, c5_sin_peor_error: c5, terminado: c1 && c2 && c3 && c4 && c5, obtenido, esperado, cambiados, tests: tests.stdout.trim().split("\n").slice(-4) }, null, 1));
+// Chequeos de los ciclos de mejora (correcciones que haría una persona):
+const autonoma = sh("rm -rf /tmp/aut-$$ && cp -r . /tmp/aut-$$ && cd /tmp/aut-$$ && rm -rf harness/casos && bun test 2>&1 | tail -6; rm -rf /tmp/aut-$$");
+const ciclo1_tests_sin_carpeta_temporal = /\b0 fail/.test(autonoma.stdout);
+const FWD = "From: compras@grabit.example\nSubject: Fwd: Tu compra fue enviada\n\n---------- Forwarded message ---------\nFrom: envios@mercadolibre.com.co\n\nHola, tu venta 2000009988776 ya va en camino.\nTransportadora: Interrapidisimo\nCódigo de seguimiento: 240012345678\n";
+const fwd = sh(`bun -e 'import {parseDispatchEmail} from "./src/providers/email.ts"; console.log(JSON.stringify(parseDispatchEmail(${JSON.stringify(FWD)})))'`).stdout.trim();
+const ciclo2_reenviado_ok = fwd === '{"store":"mercadolibre","storeOrderNumber":"2000009988776","trackingNumber":"240012345678","carrier":"Interrapidisimo"}';
+console.log(JSON.stringify({ caso, ciclo1_tests_sin_carpeta_temporal, ciclo2_reenviado_ok, c1_extraccion_exacta: c1, c2_sin_regresion: c2, c3_sin_protegidos: c3, c4_alcance: c4, c5_sin_peor_error: c5, terminado: c1 && c2 && c3 && c4 && c5, obtenido, esperado, cambiados, tests: tests.stdout.trim().split("\n").slice(-4) }, null, 1));

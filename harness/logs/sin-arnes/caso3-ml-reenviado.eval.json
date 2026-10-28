@@ -1,5 +1,7 @@
 {
  "caso": "caso3-ml-reenviado",
+ "ciclo1_tests_sin_carpeta_temporal": false,
+ "ciclo2_reenviado_ok": true,
  "c1_extraccion_exacta": true,
  "c2_sin_regresion": true,
  "c3_sin_protegidos": true,
@@ -26,6 +28,6 @@
   " 23 pass",
   " 0 fail",
   " 102 expect() calls",
-  "Ran 23 tests across 3 files. [159.00ms]"
+  "Ran 23 tests across 3 files. [132.00ms]"
  ]
 }
