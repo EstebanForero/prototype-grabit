@@ -1,0 +1,7 @@
+From: ebay@ebay.com
+Subject: Your item has shipped
+
+Item number 3045566778899
+Order number 23-11223-44556
+Shipped with: USPS
+Tracking number: 9400111899223344556677

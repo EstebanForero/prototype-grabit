@@ -1,0 +1,6 @@
+{
+  "hooks": {
+    "PreToolUse": [{ "hooks": [{ "type": "command", "command": "bun scripts/guardarrail.ts tool" }] }],
+    "Stop": [{ "hooks": [{ "type": "command", "command": "bun scripts/stop-hook.ts" }] }]
+  }
+}
