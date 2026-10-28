@@ -1,5 +1,106 @@
+diff --git a/src/data/store.ts b/src/data/store.ts
+index 7693f14..0d42852 100644
+--- a/src/data/store.ts
++++ b/src/data/store.ts
+@@ -376,6 +376,7 @@ export class TrackingStore {
+   ingestEmail(raw: string): { parsed: ReturnType<typeof parseDispatchEmail>; shipmentId?: string; linkedExisting?: boolean } {
+     const parsed = parseDispatchEmail(raw);
+     if ("error" in parsed) return { parsed };
++    if (!parsed.trackingNumber) return { parsed };
+     const row = this.db
+       .query(
+         "SELECT id FROM products WHERE lower(store) = ? AND store_order_number = ? ORDER BY created_at DESC LIMIT 1",
+@@ -385,7 +386,7 @@ export class TrackingStore {
+     const created = this.registerShipment({
+       productIds: [row.id],
+       trackingNumber: parsed.trackingNumber,
+-      carrier: parsed.carrier,
++      carrier: parsed.carrier ?? undefined,
+       intake: "email",
+       registeredBy: "lector-correo",
+     });
+diff --git a/src/providers/email.ts b/src/providers/email.ts
+index 7d84fa6..670ddc1 100644
+--- a/src/providers/email.ts
++++ b/src/providers/email.ts
+@@ -1,8 +1,9 @@
+ export interface ParsedDispatch {
+   store: "amazon" | "mercadolibre" | "ebay" | "alibaba" | "homecenter";
+   storeOrderNumber: string;
+-  trackingNumber: string;
+-  carrier?: string;
++  /** Null si el correo nombra el seguimiento pero la guía todavía no existe (por ejemplo, "pending"). */
++  trackingNumber: string | null;
++  carrier: string | null;
+ }
+ 
+ const STORES: Array<{ store: ParsedDispatch["store"]; test: RegExp; order: RegExp }> = [
+@@ -18,21 +19,36 @@ function bodyOf(raw: string): string {
+   return split.length > 1 ? split.slice(1).join("\n") : raw;
+ }
+ 
++/** Un aviso de "pending" no es guía. Tampoco lo es el número de pedido ni un token sin dígitos. */
++function readTracking(text: string, orderNumber: string): string | null {
++  const match = text.match(
++    /(?:tracking(?:\s+id|\s+number)?|gu[ií]a|c[oó]digo de seguimiento|rastreo)\s*[:#]?\s*([A-Za-z0-9-]{4,40})/i,
++  );
++  const value = match?.[1]?.trim() ?? "";
++  if (!value || value === orderNumber) return null;
++  if (/^(pending|pendiente|tba|tbd|n\/a|na|none|null|unknown|unavailable)$/i.test(value)) return null;
++  if (!/^[A-Za-z0-9-]{8,40}$/.test(value) || !/\d/.test(value)) return null;
++  if (/^\d{3}-\d{7}-\d{7}$/.test(value)) return null;
++  return value;
++}
++
++function readCarrier(text: string): string | null {
++  const match = text.match(/(?:carrier|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i);
++  const value = match?.[1]?.trim().replace(/[\s.]+$/, "") ?? "";
++  if (!value || /^(pending|pendiente|tba|tbd|n\/a|na|none|null|unknown|unavailable)$/i.test(value)) return null;
++  return value;
++}
++
+ export function parseDispatchEmail(raw: string): ParsedDispatch | { error: string } {
+   const text = bodyOf(raw);
+   const store = STORES.find((item) => item.test.test(raw));
+   if (!store) return { error: "El correo no pertenece a una tienda cubierta." };
+   const order = raw.match(store.order);
+   if (!order?.[1]) return { error: `No se encontró el número de pedido de ${store.store}.` };
+-  const tracking = text.match(
+-    /(?:tracking(?:\s+id|\s+number)?|gu[ií]a|c[oó]digo de seguimiento|rastreo)\s*[:#]?\s*([A-Z0-9-]{8,40})/i,
+-  );
+-  if (!tracking?.[1]) return { error: "El correo no trae una guía." };
+-  const carrier = text.match(/(?:carrier|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i);
+   return {
+     store: store.store,
+     storeOrderNumber: order[1],
+-    trackingNumber: tracking[1].trim(),
+-    carrier: carrier?.[1]?.trim(),
++    trackingNumber: readTracking(text, order[1]),
++    carrier: readCarrier(text),
+   };
+ }
+diff --git a/src/providers/mailbox.ts b/src/providers/mailbox.ts
+index cb58b16..34e4e42 100644
+--- a/src/providers/mailbox.ts
++++ b/src/providers/mailbox.ts
+@@ -91,6 +91,15 @@ export function applyMessage(store: TrackingStore, raw: string, subject = "", fr
+   const text = `From: ${fromLine}\nSubject: ${subjectLine}\n\n${messageText(raw)}`;
+   const parsed = parseDispatchEmail(text);
+   if ("error" in parsed) return { subject: subjectLine, from: fromLine, outcome: "ignorado", detail: parsed.error };
++  if (!parsed.trackingNumber) {
++    const carrier = parsed.carrier ? ` Transportadora: ${parsed.carrier}.` : "";
++    return {
++      subject: subjectLine,
++      from: fromLine,
++      outcome: "ignorado",
++      detail: `Pedido ${parsed.storeOrderNumber} de ${parsed.store} sin guía.${carrier}`,
++    };
++  }
+   const ingested = store.ingestEmail(text);
+   if (ingested.shipmentId) {
+     const already = ingested.linkedExisting === true;
 diff --git a/tests/mail.test.ts b/tests/mail.test.ts
-index c8a11c2..a1bb743 100644
+index c8a11c2..4b0da84 100644
 --- a/tests/mail.test.ts
 +++ b/tests/mail.test.ts
 @@ -3,6 +3,7 @@ import { mkdtempSync } from "node:fs";
@@ -10,13 +111,32 @@ index c8a11c2..a1bb743 100644
  import { applyMessage } from "../src/providers/mailbox.ts";
  import { messageText } from "../src/providers/mime.ts";
  
-@@ -72,4 +73,9 @@ describe("correo", () => {
+@@ -72,4 +73,28 @@ describe("correo", () => {
      expect(stores).toEqual(["amazon", "mercadolibre", "ebay", "alibaba", "homecenter"]);
      store.close();
    });
 +
-+  test("un aviso de Alibaba con la guía pendiente no inventa número ni transportadora", async () => {
++  test("un aviso de Alibaba sin guía no usa pending como número de rastreo", async () => {
 +    const raw = await Bun.file(join(root, "harness/casos/caso4-alibaba-sin-guia.txt")).text();
-+    expect(parseDispatchEmail(raw)).toEqual({ error: "El correo no trae una guía." });
++    const parsed = parseDispatchEmail(raw);
++    expect(parsed).toEqual({
++      store: "alibaba",
++      storeOrderNumber: "998877665544332",
++      trackingNumber: null,
++      carrier: null,
++    });
++    const dir = mkdtempSync(join(tmpdir(), "grabit-mail-"));
++    const store = TrackingStore.open(join(dir, "test.sqlite"), { now: () => "2026-10-04T12:00:00.000Z" });
++    const product = store.registerProduct({
++      mode: "international",
++      customerCountry: "CO",
++      customerCity: "Bogotá",
++      store: "alibaba",
++      storeOrderNumber: "998877665544332",
++    });
++    const item = applyMessage(store, raw);
++    expect(item.outcome).toBe("ignorado");
++    expect(store.dossier(product.id).shipments).toHaveLength(0);
++    store.close();
 +  });
  });

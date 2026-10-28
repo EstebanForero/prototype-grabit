@@ -1,0 +1,58 @@
+diff --git a/harness/memoria/progreso.md b/harness/memoria/progreso.md
+index 1fe9485..382ad81 100644
+--- a/harness/memoria/progreso.md
++++ b/harness/memoria/progreso.md
+@@ -1,2 +1,3 @@
+ # Bitácora de progreso (memoria entre sesiones)
+ Formato: fecha · caso · cambio · resultado.
++- 2026-10-28 · caso4-alibaba-sin-guia · "Tracking: pending" no es guía: se valida el token con looksLikeTracking (longitud y dígito) y se espera el error; prueba en tests/mail.test.ts · VERIFICACION OK
+diff --git a/src/providers/email.ts b/src/providers/email.ts
+index 7d84fa6..f18f4ca 100644
+--- a/src/providers/email.ts
++++ b/src/providers/email.ts
+@@ -1,3 +1,5 @@
++import { looksLikeTracking } from "../core/normalize.ts";
++
+ export interface ParsedDispatch {
+   store: "amazon" | "mercadolibre" | "ebay" | "alibaba" | "homecenter";
+   storeOrderNumber: string;
+@@ -27,12 +29,13 @@ export function parseDispatchEmail(raw: string): ParsedDispatch | { error: strin
+   const tracking = text.match(
+     /(?:tracking(?:\s+id|\s+number)?|gu[ií]a|c[oó]digo de seguimiento|rastreo)\s*[:#]?\s*([A-Z0-9-]{8,40})/i,
+   );
+-  if (!tracking?.[1]) return { error: "El correo no trae una guía." };
++  const trackingNumber = tracking?.[1]?.trim();
++  if (!trackingNumber || !looksLikeTracking(trackingNumber)) return { error: "El correo no trae una guía." };
+   const carrier = text.match(/(?:carrier|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i);
+   return {
+     store: store.store,
+     storeOrderNumber: order[1],
+-    trackingNumber: tracking[1].trim(),
++    trackingNumber,
+     carrier: carrier?.[1]?.trim(),
+   };
+ }
+diff --git a/tests/mail.test.ts b/tests/mail.test.ts
+index c8a11c2..0ba3f59 100644
+--- a/tests/mail.test.ts
++++ b/tests/mail.test.ts
+@@ -3,6 +3,7 @@ import { mkdtempSync } from "node:fs";
+ import { tmpdir } from "node:os";
+ import { join } from "node:path";
+ import { TrackingStore } from "../src/data/store.ts";
++import { parseDispatchEmail } from "../src/providers/email.ts";
+ import { applyMessage } from "../src/providers/mailbox.ts";
+ import { messageText } from "../src/providers/mime.ts";
+ 
+@@ -59,6 +60,11 @@ describe("correo", () => {
+     store.close();
+   });
+ 
++  test("Alibaba con Tracking pending no inventa una guía", async () => {
++    const raw = await Bun.file(join(root, "harness/casos/caso4-alibaba-sin-guia.txt")).text();
++    expect(parseDispatchEmail(raw)).toEqual({ error: "El correo no trae una guía." });
++  });
++
+   test("los cinco ejemplos se reconocen aunque el sobre venga solo dentro del archivo", async () => {
+     const dir = mkdtempSync(join(tmpdir(), "grabit-mail-"));
+     const store = TrackingStore.open(join(dir, "test.sqlite"), { now: () => "2026-10-04T12:00:00.000Z" });

@@ -1,5 +1,5 @@
 diff --git a/src/providers/email.ts b/src/providers/email.ts
-index 7d84fa6..1905039 100644
+index 7d84fa6..11d525e 100644
 --- a/src/providers/email.ts
 +++ b/src/providers/email.ts
 @@ -28,11 +28,17 @@ export function parseDispatchEmail(raw: string): ParsedDispatch | { error: strin
@@ -7,18 +7,38 @@ index 7d84fa6..1905039 100644
    );
    if (!tracking?.[1]) return { error: "El correo no trae una guía." };
 -  const carrier = text.match(/(?:carrier|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i);
++  const trackingNumber = tracking[1].trim();
 +  const labeledCarrier = text.match(
 +    /(?:carrier|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i,
 +  );
-+  // Homecenter pone la transportadora entre paréntesis, junto a la guía: "7012345678 (Coordinadora)".
-+  const wrappedCarrier = text
-+    .slice((tracking.index ?? 0) + tracking[0].length)
-+    .match(/^\s*\(\s*([A-Za-z][A-Za-z0-9 .'-]{1,40}?)\s*\)/);
++  const wrappedCarrier = text.match(
++    new RegExp(`${trackingNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\(\\s*([A-Za-z][A-Za-z0-9 .'-]{1,40}?)\\s*\\)`),
++  );
    return {
      store: store.store,
      storeOrderNumber: order[1],
-     trackingNumber: tracking[1].trim(),
+-    trackingNumber: tracking[1].trim(),
 -    carrier: carrier?.[1]?.trim(),
++    trackingNumber,
 +    carrier: (labeledCarrier?.[1] ?? wrappedCarrier?.[1])?.trim(),
    };
  }
+diff --git a/tests/flow.test.ts b/tests/flow.test.ts
+index 3bd6de8..3d79cb0 100644
+--- a/tests/flow.test.ts
++++ b/tests/flow.test.ts
+@@ -152,4 +152,14 @@ describe("flujo persistido", () => {
+       expect("error" in parsed).toBe(false);
+     }
+   });
++
++  test("el correo de Homecenter trae la transportadora entre paréntesis", async () => {
++    const parsed = parseDispatchEmail(await Bun.file(join(root, "harness/casos/caso5-homecenter-guia.txt")).text());
++    expect(parsed).toEqual({
++      store: "homecenter",
++      storeOrderNumber: "771234",
++      trackingNumber: "7012345678",
++      carrier: "Coordinadora",
++    });
++  });
+ });

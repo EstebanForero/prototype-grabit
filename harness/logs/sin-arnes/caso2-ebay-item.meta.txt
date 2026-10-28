@@ -1,1 +1,1 @@
-exit=0 segundos=184
+exit=0 segundos=326

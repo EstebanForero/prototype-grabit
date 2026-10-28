@@ -1,0 +1,4 @@
+exit=0 segundos=200
+ M tests/mail.test.ts
+?? harness/casos/caso4-alibaba-sin-guia.json
+?? harness/memoria/

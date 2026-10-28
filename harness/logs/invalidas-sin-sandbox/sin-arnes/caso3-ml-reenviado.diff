@@ -1,0 +1,53 @@
+diff --git a/src/providers/email.ts b/src/providers/email.ts
+index 7d84fa6..a8c5252 100644
+--- a/src/providers/email.ts
++++ b/src/providers/email.ts
+@@ -18,9 +18,27 @@ function bodyOf(raw: string): string {
+   return split.length > 1 ? split.slice(1).join("\n") : raw;
+ }
+ 
++function headerLine(raw: string, name: string): string {
++  const head = raw.split(/\r?\n\r?\n/)[0] ?? "";
++  return head.match(new RegExp(`^${name}:\\s*(.+)$`, "im"))?.[1]?.trim() ?? "";
++}
++
++/**
++ * La tienda del despacho es la del remitente. Una mención suelta en el cuerpo
++ * (por ejemplo una oferta de otra tienda) no la reemplaza. Si el sobre no
++ * nombra una tienda con pedido, se usa la mención cuyo número de pedido sí aparece.
++ */
++function detectStore(raw: string): (typeof STORES)[number] | undefined {
++  const from = headerLine(raw, "from");
++  const fromStore = from ? STORES.find((item) => item.test.test(from)) : undefined;
++  if (fromStore && fromStore.order.test(raw)) return fromStore;
++  const mentioned = STORES.filter((item) => item.test.test(raw));
++  return mentioned.find((item) => item.order.test(raw)) ?? fromStore ?? mentioned[0];
++}
++
+ export function parseDispatchEmail(raw: string): ParsedDispatch | { error: string } {
+   const text = bodyOf(raw);
+-  const store = STORES.find((item) => item.test.test(raw));
++  const store = detectStore(raw);
+   if (!store) return { error: "El correo no pertenece a una tienda cubierta." };
+   const order = raw.match(store.order);
+   if (!order?.[1]) return { error: `No se encontró el número de pedido de ${store.store}.` };
+diff --git a/tests/flow.test.ts b/tests/flow.test.ts
+index 3bd6de8..470a364 100644
+--- a/tests/flow.test.ts
++++ b/tests/flow.test.ts
+@@ -152,4 +152,15 @@ describe("flujo persistido", () => {
+       expect("error" in parsed).toBe(false);
+     }
+   });
++
++  test("un aviso de Mercado Libre que ofrece Amazon sigue siendo de Mercado Libre", async () => {
++    const raw = await Bun.file(join(root, "harness/casos/caso3-ml-reenviado.txt")).text();
++    const parsed = parseDispatchEmail(raw);
++    expect(parsed).toEqual({
++      store: "mercadolibre",
++      storeOrderNumber: "2000009988776",
++      trackingNumber: "240012345678",
++      carrier: "Interrapidisimo",
++    });
++  });
+ });

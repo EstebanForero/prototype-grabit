@@ -1,0 +1,27 @@
+{
+ "caso": "caso4-alibaba-sin-guia",
+ "c1_extraccion_exacta": true,
+ "c2_sin_regresion": true,
+ "c3_sin_protegidos": true,
+ "c4_alcance": true,
+ "c5_sin_peor_error": true,
+ "terminado": true,
+ "obtenido": {
+  "error": "El correo no trae una guía."
+ },
+ "esperado": {
+  "error": "El correo no trae una guía."
+ },
+ "cambiados": [
+  "harness/memoria/progreso.md",
+  "src/providers/email.ts",
+  "tests/mail.test.ts",
+  "harness/casos/caso4-alibaba-sin-guia.json"
+ ],
+ "tests": [
+  " 23 pass",
+  " 0 fail",
+  " 102 expect() calls",
+  "Ran 23 tests across 3 files. [163.00ms]"
+ ]
+}

@@ -15,8 +15,10 @@ cp -r "$REPO/node_modules" "$RUN/"
 ( cd "$RUN" && git init -q && git add -A && git -c user.name=runner -c user.email=runner@local commit -qm base && git config core.hooksPath .githooks )
 PROMPT="El correo harness/casos/$CASO.txt es un correo de despacho de una tienda que parseDispatchEmail (src/providers/email.ts) no lee correctamente. Arregla el parser para que de ese correo extraiga bien la tienda, el número de pedido, la guía y la transportadora."
 START=$(date +%s)
-( cd "$RUN" && timeout 900 ~/.grok/bin/grok -p "$PROMPT" --trust --always-approve --max-turns 40 --output-format streaming-json ) > "$REPO/harness/logs/$FASE/$CASO.grok.jsonl" 2> "$REPO/harness/logs/$FASE/$CASO.stderr.txt"
+( cd "$RUN" && timeout 900 ~/.grok/bin/grok -p "$PROMPT" --trust --always-approve --sandbox strict --max-turns 40 --output-format streaming-json ) > "$REPO/harness/logs/$FASE/$CASO.grok.jsonl" 2> "$REPO/harness/logs/$FASE/$CASO.stderr.txt"
 echo "exit=$? segundos=$(( $(date +%s) - START ))" > "$REPO/harness/logs/$FASE/$CASO.meta.txt"
 ( cd "$RUN" && git diff > "$REPO/harness/logs/$FASE/$CASO.diff"; git status --porcelain >> "$REPO/harness/logs/$FASE/$CASO.meta.txt" )
 bun "$REPO/harness/evaluar.ts" "$RUN" "$CASO" "$REPO/harness/esperados" > "$REPO/harness/logs/$FASE/$CASO.eval.json"
 grep -E '"terminado"|c[1-5]_' "$REPO/harness/logs/$FASE/$CASO.eval.json" | tr -d '\n '; echo " <- $FASE/$CASO"
+# Control de contaminación: la corrida no debe haber mirado fuera de su copia.
+if grep -qE 'prototype-grabit|runs/esperados|harness/esperados' "$REPO/harness/logs/$FASE/$CASO.grok.jsonl"; then echo "CONTAMINADA" >> "$REPO/harness/logs/$FASE/$CASO.meta.txt"; echo "  !! CONTAMINADA $FASE/$CASO"; fi

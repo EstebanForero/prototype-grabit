@@ -1,0 +1,36 @@
+diff --git a/harness/memoria/progreso.md b/harness/memoria/progreso.md
+index 1fe9485..be81e5b 100644
+--- a/harness/memoria/progreso.md
++++ b/harness/memoria/progreso.md
+@@ -1,2 +1,3 @@
+ # Bitácora de progreso (memoria entre sesiones)
+ Formato: fecha · caso · cambio · resultado.
++- 2026-10-28 · caso2-ebay-item · el parser ya tomaba el pedido 23-11223-44556 (no el item number 3045566778899), la guía 9400111899223344556677, USPS y la tienda ebay; se registró el JSON esperado y una prueba de regresión en tests/mail.test.ts · VERIFICACION OK
+diff --git a/tests/mail.test.ts b/tests/mail.test.ts
+index c8a11c2..880936c 100644
+--- a/tests/mail.test.ts
++++ b/tests/mail.test.ts
+@@ -3,12 +3,23 @@ import { mkdtempSync } from "node:fs";
+ import { tmpdir } from "node:os";
+ import { join } from "node:path";
+ import { TrackingStore } from "../src/data/store.ts";
++import { parseDispatchEmail } from "../src/providers/email.ts";
+ import { applyMessage } from "../src/providers/mailbox.ts";
+ import { messageText } from "../src/providers/mime.ts";
+ 
+ const root = join(import.meta.dir, "..");
+ 
+ describe("correo", () => {
++  test("el correo de eBay no usa el item number como pedido", async () => {
++    const raw = await Bun.file(join(root, "harness/casos/caso2-ebay-item.txt")).text();
++    expect(parseDispatchEmail(raw)).toEqual({
++      store: "ebay",
++      storeOrderNumber: "23-11223-44556",
++      trackingNumber: "9400111899223344556677",
++      carrier: "USPS",
++    });
++  });
++
+   test("lee el texto de un mensaje multipart", () => {
+     const raw = [
+       "From: shipment-tracking@amazon.com",

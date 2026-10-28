@@ -19,12 +19,13 @@
   "carrier": "Coordinadora"
  },
  "cambiados": [
-  "src/providers/email.ts"
+  "src/providers/email.ts",
+  "tests/flow.test.ts"
  ],
  "tests": [
-  " 22 pass",
+  " 23 pass",
   " 0 fail",
-  " 101 expect() calls",
-  "Ran 22 tests across 3 files. [154.00ms]"
+  " 102 expect() calls",
+  "Ran 23 tests across 3 files. [132.00ms]"
  ]
 }
