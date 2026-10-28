@@ -6,7 +6,7 @@ import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { parseDispatchEmail } from "../src/providers/email.ts";
 
-const dir = join(import.meta.dir, "..", "harness/casos");
+const dir = join(import.meta.dir, "..", process.argv[2] ?? "harness/casos");
 let fallos = 0;
 const filas: string[] = [];
 for (const f of readdirSync(dir).filter((n) => n.endsWith(".txt")).sort()) {

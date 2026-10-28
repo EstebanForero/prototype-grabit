@@ -21,7 +21,7 @@ Guía: `Tracking ID`, `Tracking number`, `Guía`, `Código de seguimiento`, `Nú
 Transportadora: `Carrier`, `Transportadora`, `Transportista`, `Shipped with`, `Enviado con`.
 
 ## Casos difíciles
-- Un correo puede mencionar otra tienda en el pie o en publicidad. La tienda la decide el remitente (`From:`), no una palabra suelta del cuerpo.
+- Un correo puede mencionar otra tienda en el pie o en publicidad. La tienda la decide el remitente **original**, no una palabra suelta del cuerpo. Si el correo fue reenviado (el `From:` del encabezado es un buzón interno como `compras@grabit.example` y dentro hay un bloque `Forwarded message` / `Mensaje reenviado` con su propio `From:`), la tienda sale de ese `From:` interno. Nunca de la publicidad o del pie. El corpus `harness/regresion/` tiene un ejemplo y `verificar.ts` lo comprueba siempre.
 - "Tracking: pending" no es una guía: la guía tiene al menos 8 caracteres y al menos un dígito.
 - "Item number" no es el número de pedido.
 

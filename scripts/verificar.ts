@@ -3,13 +3,14 @@
  * 1) Cada correo de harness/casos tiene su JSON esperado y el parser lo produce exacto.
  * 2) La suite completa (bun test) pasa.
  * 3) (v2) Ninguna prueba lee harness/casos/.
+ * 4) (v3) El corpus fijo harness/regresion/ (correos reenviados, etc.) sigue leyéndose igual.
  */
 import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 // Regla fija (ciclo 1): las pruebas no pueden depender de la bandeja temporal harness/casos/.
 const dependientes = readdirSync("tests").filter((f) => readFileSync(`tests/${f}`, "utf8").includes("harness/casos"));
 if (dependientes.length) { console.error(`VERIFICACION FALLIDA: ${dependientes.join(", ")} lee harness/casos/; copia el correo dentro de la prueba.`); process.exit(1); }
-const pasos: string[][] = [["bun", "scripts/verificar-correos.ts"], ["bun", "test"]];
+const pasos: string[][] = [["bun", "scripts/verificar-correos.ts"], ["bun", "scripts/verificar-correos.ts", "harness/regresion"], ["bun", "test"]];
 for (const p of pasos) {
   const r = spawnSync(p[0], p.slice(1), { encoding: "utf8" });
   process.stdout.write(r.stdout ?? ""); process.stderr.write(r.stderr ?? "");
