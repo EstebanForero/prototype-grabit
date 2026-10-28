@@ -1,0 +1,61 @@
+diff --git a/src/providers/email.ts b/src/providers/email.ts
+index 7d84fa6..2aa54d5 100644
+--- a/src/providers/email.ts
++++ b/src/providers/email.ts
+@@ -18,9 +18,25 @@ function bodyOf(raw: string): string {
+   return split.length > 1 ? split.slice(1).join("\n") : raw;
+ }
+ 
++/** Dominio del remitente. Una oferta en el cuerpo no cambia la tienda. */
++function senderHost(raw: string): string {
++  const head = raw.split(/\r?\n\r?\n/, 1)[0] ?? "";
++  const from = head.match(/^from:[ \t]*([^\r\n]*)/im)?.[1]?.trim() ?? "";
++  const address = (from.match(/<([^>]+)>/)?.[1] ?? from).trim();
++  const at = address.lastIndexOf("@");
++  return (at >= 0 ? address.slice(at + 1) : address).toLowerCase();
++}
++
++function detectStore(raw: string): (typeof STORES)[number] | undefined {
++  const host = senderHost(raw);
++  const bySender = host ? STORES.find((item) => item.test.test(host)) : undefined;
++  if (bySender) return bySender;
++  return STORES.find((item) => item.test.test(raw) && item.order.test(raw)) ?? STORES.find((item) => item.test.test(raw));
++}
++
+ export function parseDispatchEmail(raw: string): ParsedDispatch | { error: string } {
+   const text = bodyOf(raw);
+-  const store = STORES.find((item) => item.test.test(raw));
++  const store = detectStore(raw);
+   if (!store) return { error: "El correo no pertenece a una tienda cubierta." };
+   const order = raw.match(store.order);
+   if (!order?.[1]) return { error: `No se encontró el número de pedido de ${store.store}.` };
+diff --git a/tests/flow.test.ts b/tests/flow.test.ts
+index 3bd6de8..58f55bd 100644
+--- a/tests/flow.test.ts
++++ b/tests/flow.test.ts
+@@ -146,6 +146,25 @@ describe("flujo persistido", () => {
+     store.close();
+   });
+ 
++  test("un despacho de mercadolibre.com.co no se lee como Amazon por la oferta del cuerpo", () => {
++    const raw = [
++      "From: envios@mercadolibre.com.co",
++      "Subject: Tu compra fue enviada",
++      "",
++      "Hola, tu venta 2000009988776 ya va en camino.",
++      "Transportadora: Interrapidisimo",
++      "Código de seguimiento: 240012345678",
++      "",
++      "¿Compras también en Amazon? Vincula tu cuenta y recibe ofertas.",
++    ].join("\n");
++    expect(parseDispatchEmail(raw)).toEqual({
++      store: "mercadolibre",
++      storeOrderNumber: "2000009988776",
++      trackingNumber: "240012345678",
++      carrier: "Interrapidisimo",
++    });
++  });
++
+   test("las cinco tiendas dejan una guía legible en el correo de ejemplo", async () => {
+     for (const file of ["amazon.txt", "mercadolibre.txt", "ebay.txt", "alibaba.txt", "homecenter.txt"]) {
+       const parsed = parseDispatchEmail(await Bun.file(join(root, "fixtures/correos", file)).text());

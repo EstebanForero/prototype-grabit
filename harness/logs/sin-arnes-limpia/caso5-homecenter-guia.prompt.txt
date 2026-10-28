@@ -1,0 +1,9 @@
+Este es un correo de despacho de una tienda que parseDispatchEmail (src/providers/email.ts) no lee correctamente:
+
+From: pedidos@homecenter.com.co
+Subject: Tu pedido fue despachado
+
+Pedido 771234 de Homecenter va en camino.
+Guía: 7012345678 (Coordinadora)
+
+Arregla el parser para que de ese correo extraiga bien la tienda, el número de pedido, la guía y la transportadora.

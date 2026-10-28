@@ -1,0 +1,12 @@
+Este es un correo de despacho de una tienda que parseDispatchEmail (src/providers/email.ts) no lee correctamente:
+
+From: confirmar-envio@amazon.com
+Subject: Tu pedido ha sido enviado
+
+Hola, tu pedido de Amazon.com ya va en camino.
+
+Número de pedido: 113-9876543-7654321
+Transportista: Amazon Logistics
+Número de seguimiento: TBA301234567890
+
+Arregla el parser para que de ese correo extraiga bien la tienda, el número de pedido, la guía y la transportadora.

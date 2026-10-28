@@ -1,0 +1,3 @@
+exit=0 segundos=138
+ M src/providers/email.ts
+ M tests/mail.test.ts

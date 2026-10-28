@@ -1,0 +1,11 @@
+Este es un correo de despacho de una tienda que parseDispatchEmail (src/providers/email.ts) no lee correctamente:
+
+From: ebay@ebay.com
+Subject: Your item has shipped
+
+Item number 3045566778899
+Order number 23-11223-44556
+Shipped with: USPS
+Tracking number: 9400111899223344556677
+
+Arregla el parser para que de ese correo extraiga bien la tienda, el número de pedido, la guía y la transportadora.
