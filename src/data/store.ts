@@ -77,6 +77,8 @@ export interface TrackingRow {
   statusLabel: string;
   clientLabel: string;
   daysInStatus: number;
+  trackingNumber: string | null;
+  carrier: string | null;
   held: boolean;
   holdReason: string | null;
   alerts: Alert[];
@@ -389,6 +391,18 @@ export class TrackingStore {
       intake: "email",
       registeredBy: "lector-correo",
     });
+    if (!created.linkedExisting) {
+      // El correo de despacho es la tienda diciendo que el paquete salió: eso es un "picked_up".
+      const shipment = this.shipmentById(created.shipmentId);
+      this.ingestObservation({
+        shipmentId: created.shipmentId,
+        source: "email",
+        occurredAt: shipment?.registeredAt ?? this.clock(),
+        code: "picked_up",
+        text: `La tienda avisó por correo que despachó con ${parsed.carrier ?? "la transportadora"}, guía ${parsed.trackingNumber}.`,
+        raw: { store: parsed.store, order: parsed.storeOrderNumber },
+      });
+    }
     return { parsed, shipmentId: created.shipmentId, linkedExisting: created.linkedExisting };
   }
 
@@ -403,6 +417,7 @@ export class TrackingStore {
       const applied = this.db
         .query("SELECT created_at FROM decisions WHERE product_id = ? AND outcome = 'apply' ORDER BY created_at DESC LIMIT 1")
         .get(product.id) as { created_at: string } | null;
+      const guide = this.activeShipmentsOf(product.id).filter((item) => item.trackingNumber).at(-1);
       const since = applied?.created_at ?? row.created_at;
       const days = Math.max(0, Math.floor((Date.parse(this.clock()) - Date.parse(since)) / 86_400_000));
       return {
@@ -411,6 +426,8 @@ export class TrackingStore {
         statusLabel: STATUS_LABEL[product.status],
         clientLabel: CLIENT_LABEL[product.status],
         daysInStatus: days,
+        trackingNumber: guide?.trackingNumber ?? null,
+        carrier: guide?.carrier ?? null,
         held: last?.outcome === "hold",
         holdReason: last?.outcome === "hold" ? last.hold_reason : null,
         alerts,
