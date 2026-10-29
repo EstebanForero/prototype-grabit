@@ -125,3 +125,21 @@ Código de seguimiento: 240012345678
     });
   });
 });
+
+describe("estado y transportista tras el correo", () => {
+  test("el correo de despacho saca el producto de Comprado y deja la transportadora visible", () => {
+    const dir = mkdtempSync(join(tmpdir(), "grabit-estado-"));
+    const store = TrackingStore.open(join(dir, "db.sqlite"));
+    store.registerProduct({ id: "intl", mode: "international", customerCountry: "CO", store: "amazon", storeOrderNumber: "113-1111111-2222222" });
+    store.registerProduct({ id: "nac", mode: "national", customerCountry: "CO", customerCity: "Chía", store: "homecenter", storeOrderNumber: "778899" });
+    store.ingestEmail("From: amazon\nSubject: enviado\n\nPedido 113-1111111-2222222\nTransportadora: Amazon Logistics\nGuía: TBA301234567890\n");
+    store.ingestEmail("From: homecenter\nSubject: despacho\n\nPedido HC-778899\nTransportadora: Servientrega\nGuía: 2049998877\n");
+    const rows = new Map(store.listTracking().map((row) => [row.productId, row]));
+    expect(rows.get("intl")?.status).toBe("pre_alerted");
+    expect(rows.get("nac")?.status).toBe("shipped");
+    expect(rows.get("intl")?.carrier).toBe("Amazon Logistics");
+    expect(rows.get("intl")?.trackingNumber).toBe("TBA301234567890");
+    expect(store.dossier("nac").shipments[0]?.carrier).toBe("Servientrega");
+    store.close();
+  });
+});

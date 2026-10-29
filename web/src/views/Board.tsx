@@ -54,6 +54,7 @@ export function Board({ active }: { active: boolean }) {
             <div>
               <p className="font-semibold">{row.productId}</p>
               <p className="text-sm text-muted-foreground">{row.statusLabel} · día {row.daysInStatus}</p>
+              {row.trackingNumber && <p className="text-sm">Guía {row.trackingNumber} · {row.carrier || "transportadora sin nombre"}</p>}
             </div>
             <div className="flex flex-wrap gap-2">
               {row.held ? <Badge variant="hold">retenido</Badge> : <Badge variant="secondary">{row.clientLabel}</Badge>}
@@ -73,7 +74,7 @@ export function Board({ active }: { active: boolean }) {
             <p className="text-sm">Estado interno: {dossier.product.status}. El cliente ve <strong>{dossier.clientLabel}</strong>.</p>
             {dossier.shipments.map((shipment) => (
               <div key={shipment.id} className="border-l-2 border-accent pl-3">
-                <p className="font-medium">{shipment.trackingNumber || shipment.contactName || shipment.id}</p>
+                <p className="font-medium">{shipment.trackingNumber || shipment.contactName || shipment.id}{shipment.trackingNumber && <span className="font-normal text-muted-foreground"> · {shipment.carrier || "transportadora sin nombre"}</span>}</p>
                 <p className="text-sm text-muted-foreground">{shipment.destination} · {shipment.mode} · {shipment.recordStatus} · entró por {shipment.intake}</p>
               </div>
             ))}
