@@ -22,7 +22,8 @@ if (import.meta.main) {
   const modo = process.argv[2] ?? "commit";
   if (modo === "tool") {
     const ev = JSON.parse((await Bun.stdin.text()) || "{}");
-    const input = ev.tool_input ?? {};
+    // Grok envía toolInput (camelCase); Claude Code envía tool_input. Se aceptan los dos.
+    const input = ev.toolInput ?? ev.tool_input ?? {};
     const ruta = String(input.file_path ?? input.path ?? input.target_file ?? "");
     if (ruta && bloqueados([ruta]).length) negar(`${ruta} es un archivo protegido; requiere aprobación humana.`);
     const cmd = String(input.command ?? "");

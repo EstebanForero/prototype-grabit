@@ -5,7 +5,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, appendFileSync } from "node:fs";
 const ev = JSON.parse((await Bun.stdin.text()) || "{}");
-const sid = String(ev.session_id ?? "sin-sesion");
+const sid = String(ev.sessionId ?? ev.session_id ?? "sin-sesion");
 mkdirSync(".harness-state", { recursive: true });
 const f = `.harness-state/intentos-${sid}`;
 const n = existsSync(f) ? Number(readFileSync(f, "utf8")) : 0;
