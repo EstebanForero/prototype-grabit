@@ -1,0 +1,5 @@
+exit=0 segundos=314
+ M src/data/store.ts
+ M src/providers/email.ts
+ M src/providers/mailbox.ts
+ M tests/mail.test.ts

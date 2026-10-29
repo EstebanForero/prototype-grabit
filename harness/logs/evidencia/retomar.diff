@@ -1,0 +1,62 @@
+diff --git a/harness/memoria/progreso.md b/harness/memoria/progreso.md
+index 9f430eb..06f902f 100644
+--- a/harness/memoria/progreso.md
++++ b/harness/memoria/progreso.md
+@@ -1,4 +1,4 @@
+ # Bitácora de progreso (memoria entre sesiones)
+ Formato: fecha · caso · cambio · resultado.
+ 
+-- 2026-10-28 · caso5-homecenter-guia · EN CURSO: correo leído y .json escrito a mano (pasos 1-2 de la skill). Falta pasos 3-7. Sesión cortada.
++- 2026-10-28 · caso5-homecenter-guia · `email.ts` toma la transportadora entre paréntesis justo después de la guía (`Guía: 7012345678 (Coordinadora)`); la etiqueta `Transportadora:` sigue teniendo prioridad. Prueba copiada en `tests/mail.test.ts`. · VERIFICACION OK (caso, regresión reenviada y bun test: 23 pass).
+diff --git a/src/providers/email.ts b/src/providers/email.ts
+index 7d84fa6..6592e70 100644
+--- a/src/providers/email.ts
++++ b/src/providers/email.ts
+@@ -28,11 +28,13 @@ export function parseDispatchEmail(raw: string): ParsedDispatch | { error: strin
+     /(?:tracking(?:\s+id|\s+number)?|gu[ií]a|c[oó]digo de seguimiento|rastreo)\s*[:#]?\s*([A-Z0-9-]{8,40})/i,
+   );
+   if (!tracking?.[1]) return { error: "El correo no trae una guía." };
+-  const carrier = text.match(/(?:carrier|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i);
++  const labeledCarrier = text.match(/(?:carrier|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i);
++  // Homecenter a veces escribe la transportadora entre paréntesis, justo después de la guía: "Guía: 7012345678 (Coordinadora)".
++  const inlineCarrier = text.slice((tracking.index ?? 0) + tracking[0].length).match(/^[^\S\n]*\(([A-Za-z][A-Za-z0-9 .'-]{1,40})\)/);
+   return {
+     store: store.store,
+     storeOrderNumber: order[1],
+     trackingNumber: tracking[1].trim(),
+-    carrier: carrier?.[1]?.trim(),
++    carrier: (labeledCarrier?.[1] ?? inlineCarrier?.[1])?.trim(),
+   };
+ }
+diff --git a/tests/mail.test.ts b/tests/mail.test.ts
+index c8a11c2..7021186 100644
+--- a/tests/mail.test.ts
++++ b/tests/mail.test.ts
+@@ -3,6 +3,7 @@ import { mkdtempSync } from "node:fs";
+ import { tmpdir } from "node:os";
+ import { join } from "node:path";
+ import { TrackingStore } from "../src/data/store.ts";
++import { parseDispatchEmail } from "../src/providers/email.ts";
+ import { applyMessage } from "../src/providers/mailbox.ts";
+ import { messageText } from "../src/providers/mime.ts";
+ 
+@@ -72,4 +73,19 @@ describe("correo", () => {
+     expect(stores).toEqual(["amazon", "mercadolibre", "ebay", "alibaba", "homecenter"]);
+     store.close();
+   });
++
++  test("lee la guía de Homecenter cuando la transportadora va entre paréntesis", () => {
++    const raw = `From: pedidos@homecenter.com.co
++Subject: Tu pedido fue despachado
++
++Pedido 771234 de Homecenter va en camino.
++Guía: 7012345678 (Coordinadora)
++`;
++    expect(parseDispatchEmail(raw)).toEqual({
++      store: "homecenter",
++      storeOrderNumber: "771234",
++      trackingNumber: "7012345678",
++      carrier: "Coordinadora",
++    });
++  });
+ });

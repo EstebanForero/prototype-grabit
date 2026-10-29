@@ -1,0 +1,19 @@
+diff --git a/src/providers/email.ts b/src/providers/email.ts
+index 7d84fa6..4af6344 100644
+--- a/src/providers/email.ts
++++ b/src/providers/email.ts
+@@ -25,10 +25,12 @@ export function parseDispatchEmail(raw: string): ParsedDispatch | { error: strin
+   const order = raw.match(store.order);
+   if (!order?.[1]) return { error: `No se encontró el número de pedido de ${store.store}.` };
+   const tracking = text.match(
+-    /(?:tracking(?:\s+id|\s+number)?|gu[ií]a|c[oó]digo de seguimiento|rastreo)\s*[:#]?\s*([A-Z0-9-]{8,40})/i,
++    /(?:tracking(?:\s+id|\s+number)?|gu[ií]a|(?:c[oó]digo|n[uú]mero) de seguimiento|rastreo)\s*[:#]?\s*([A-Z0-9-]{8,40})/i,
+   );
+   if (!tracking?.[1]) return { error: "El correo no trae una guía." };
+-  const carrier = text.match(/(?:carrier|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i);
++  const carrier = text.match(
++    /(?:carrier|transportista|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i,
++  );
+   return {
+     store: store.store,
+     storeOrderNumber: order[1],

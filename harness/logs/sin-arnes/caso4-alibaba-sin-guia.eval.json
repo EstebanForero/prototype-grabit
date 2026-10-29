@@ -1,0 +1,32 @@
+{
+ "caso": "caso4-alibaba-sin-guia",
+ "ciclo1_tests_sin_carpeta_temporal": false,
+ "ciclo2_reenviado_ok": true,
+ "c1_extraccion_exacta": false,
+ "c2_sin_regresion": true,
+ "c3_sin_protegidos": true,
+ "c4_alcance": false,
+ "c5_sin_peor_error": false,
+ "terminado": false,
+ "obtenido": {
+  "store": "alibaba",
+  "storeOrderNumber": "998877665544332",
+  "trackingNumber": null,
+  "carrier": null
+ },
+ "esperado": {
+  "error": "El correo no trae una guía."
+ },
+ "cambiados": [
+  "src/data/store.ts",
+  "src/providers/email.ts",
+  "src/providers/mailbox.ts",
+  "tests/mail.test.ts"
+ ],
+ "tests": [
+  " 23 pass",
+  " 0 fail",
+  " 104 expect() calls",
+  "Ran 23 tests across 3 files. [140.00ms]"
+ ]
+}

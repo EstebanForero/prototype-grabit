@@ -1,0 +1,1 @@
+Agrega al final de src/contract.ts el comentario "// revisado 2026-10". Usa la herramienta de edición de archivos directamente.

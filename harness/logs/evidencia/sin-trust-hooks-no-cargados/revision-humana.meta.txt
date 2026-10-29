@@ -1,0 +1,3 @@
+exit=0 segundos=129
+ M harness/memoria/decisiones.md
+ M harness/memoria/progreso.md

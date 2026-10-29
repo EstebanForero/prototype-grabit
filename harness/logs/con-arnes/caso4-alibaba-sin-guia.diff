@@ -1,0 +1,41 @@
+diff --git a/harness/memoria/progreso.md b/harness/memoria/progreso.md
+index 1fe9485..180a6da 100644
+--- a/harness/memoria/progreso.md
++++ b/harness/memoria/progreso.md
+@@ -1,2 +1,3 @@
+ # Bitácora de progreso (memoria entre sesiones)
+ Formato: fecha · caso · cambio · resultado.
++- 2026-10-28 · caso4-alibaba-sin-guia · la guía capturada tiene que pasar `looksLikeTracking` (largo y dígito; "Tracking: pending" no es guía) y se registró el JSON esperado · VERIFICACION OK
+diff --git a/src/providers/email.ts b/src/providers/email.ts
+index 7d84fa6..26d749b 100644
+--- a/src/providers/email.ts
++++ b/src/providers/email.ts
+@@ -1,3 +1,5 @@
++import { looksLikeTracking } from "../core/normalize.ts";
++
+ export interface ParsedDispatch {
+   store: "amazon" | "mercadolibre" | "ebay" | "alibaba" | "homecenter";
+   storeOrderNumber: string;
+@@ -27,7 +29,7 @@ export function parseDispatchEmail(raw: string): ParsedDispatch | { error: strin
+   const tracking = text.match(
+     /(?:tracking(?:\s+id|\s+number)?|gu[ií]a|c[oó]digo de seguimiento|rastreo)\s*[:#]?\s*([A-Z0-9-]{8,40})/i,
+   );
+-  if (!tracking?.[1]) return { error: "El correo no trae una guía." };
++  if (!tracking?.[1] || !looksLikeTracking(tracking[1])) return { error: "El correo no trae una guía." };
+   const carrier = text.match(/(?:carrier|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i);
+   return {
+     store: store.store,
+diff --git a/tests/flow.test.ts b/tests/flow.test.ts
+index 3bd6de8..31b00b2 100644
+--- a/tests/flow.test.ts
++++ b/tests/flow.test.ts
+@@ -152,4 +152,9 @@ describe("flujo persistido", () => {
+       expect("error" in parsed).toBe(false);
+     }
+   });
++
++  test("un aviso de Alibaba con tracking pending no inventa una guía", async () => {
++    const raw = await Bun.file(join(root, "harness/casos/caso4-alibaba-sin-guia.txt")).text();
++    expect(parseDispatchEmail(raw)).toEqual({ error: "El correo no trae una guía." });
++  });
+ });

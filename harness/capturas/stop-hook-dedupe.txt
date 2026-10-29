@@ -1,0 +1,8 @@
+$ git checkout harness/memoria/progreso.md; for i in 1..6: echo {"sessionId":"prueba"} | bun scripts/stop-hook.ts
+llamada 1 exit=2 estado=1
+llamada 2 exit=2 estado=2
+llamada 3 exit=2 estado=3
+llamada 4 exit=0 estado=humana
+llamada 5 exit=0 estado=humana
+llamada 6 exit=0 estado=humana
+líneas REQUIERE de la sesión prueba en progreso.md: 1

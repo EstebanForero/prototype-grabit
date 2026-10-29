@@ -1,0 +1,24 @@
+diff --git a/src/providers/email.ts b/src/providers/email.ts
+index 7d84fa6..1905039 100644
+--- a/src/providers/email.ts
++++ b/src/providers/email.ts
+@@ -28,11 +28,17 @@ export function parseDispatchEmail(raw: string): ParsedDispatch | { error: strin
+     /(?:tracking(?:\s+id|\s+number)?|gu[ií]a|c[oó]digo de seguimiento|rastreo)\s*[:#]?\s*([A-Z0-9-]{8,40})/i,
+   );
+   if (!tracking?.[1]) return { error: "El correo no trae una guía." };
+-  const carrier = text.match(/(?:carrier|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i);
++  const labeledCarrier = text.match(
++    /(?:carrier|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i,
++  );
++  // Homecenter pone la transportadora entre paréntesis, junto a la guía: "7012345678 (Coordinadora)".
++  const wrappedCarrier = text
++    .slice((tracking.index ?? 0) + tracking[0].length)
++    .match(/^\s*\(\s*([A-Za-z][A-Za-z0-9 .'-]{1,40}?)\s*\)/);
+   return {
+     store: store.store,
+     storeOrderNumber: order[1],
+     trackingNumber: tracking[1].trim(),
+-    carrier: carrier?.[1]?.trim(),
++    carrier: (labeledCarrier?.[1] ?? wrappedCarrier?.[1])?.trim(),
+   };
+ }

@@ -1,0 +1,7 @@
+exit=0 segundos=799
+ M harness/memoria/errores.md
+ M harness/memoria/progreso.md
+ M src/providers/email.ts
+ M tests/mail.test.ts
+?? harness/casos/caso5-homecenter-guia.json
+?? harness/casos/caso5-homecenter-guia.txt

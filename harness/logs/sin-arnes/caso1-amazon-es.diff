@@ -1,0 +1,41 @@
+diff --git a/src/providers/email.ts b/src/providers/email.ts
+index 7d84fa6..559ad72 100644
+--- a/src/providers/email.ts
++++ b/src/providers/email.ts
+@@ -25,10 +25,12 @@ export function parseDispatchEmail(raw: string): ParsedDispatch | { error: strin
+   const order = raw.match(store.order);
+   if (!order?.[1]) return { error: `No se encontró el número de pedido de ${store.store}.` };
+   const tracking = text.match(
+-    /(?:tracking(?:\s+id|\s+number)?|gu[ií]a|c[oó]digo de seguimiento|rastreo)\s*[:#]?\s*([A-Z0-9-]{8,40})/i,
++    /(?:tracking(?:\s+id|\s+number)?|gu[ií]a|(?:c[oó]digo|n[uú]mero) de seguimiento|rastreo)\s*[:#]?\s*([A-Z0-9-]{8,40})/i,
+   );
+   if (!tracking?.[1]) return { error: "El correo no trae una guía." };
+-  const carrier = text.match(/(?:carrier|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i);
++  const carrier = text.match(
++    /(?:carrier|transportadora|transportista|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i,
++  );
+   return {
+     store: store.store,
+     storeOrderNumber: order[1],
+diff --git a/tests/flow.test.ts b/tests/flow.test.ts
+index 3bd6de8..06eab30 100644
+--- a/tests/flow.test.ts
++++ b/tests/flow.test.ts
+@@ -146,6 +146,17 @@ describe("flujo persistido", () => {
+     store.close();
+   });
+ 
++  test("el correo de Amazon en español deja tienda, pedido, guía y transportadora", async () => {
++    const raw = await Bun.file(join(root, "harness/casos/caso1-amazon-es.txt")).text();
++    const parsed = parseDispatchEmail(raw);
++    expect(parsed).toEqual({
++      store: "amazon",
++      storeOrderNumber: "113-9876543-7654321",
++      trackingNumber: "TBA301234567890",
++      carrier: "Amazon Logistics",
++    });
++  });
++
+   test("las cinco tiendas dejan una guía legible en el correo de ejemplo", async () => {
+     for (const file of ["amazon.txt", "mercadolibre.txt", "ebay.txt", "alibaba.txt", "homecenter.txt"]) {
+       const parsed = parseDispatchEmail(await Bun.file(join(root, "fixtures/correos", file)).text());

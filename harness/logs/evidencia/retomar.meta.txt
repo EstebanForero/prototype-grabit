@@ -1,0 +1,4 @@
+exit=0 segundos=121
+ M harness/memoria/progreso.md
+ M src/providers/email.ts
+ M tests/mail.test.ts

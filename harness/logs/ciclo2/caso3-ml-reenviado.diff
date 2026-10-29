@@ -1,0 +1,70 @@
+diff --git a/harness/memoria/progreso.md b/harness/memoria/progreso.md
+index 1fe9485..3d61b89 100644
+--- a/harness/memoria/progreso.md
++++ b/harness/memoria/progreso.md
+@@ -1,2 +1,3 @@
+ # Bitácora de progreso (memoria entre sesiones)
+ Formato: fecha · caso · cambio · resultado.
++2026-10-28 · caso3-ml-reenviado · la tienda sale del From original (el del bloque reenviado si el encabezado no es una tienda cubierta) · VERIFICACION OK
+diff --git a/src/providers/email.ts b/src/providers/email.ts
+index 7d84fa6..a51c361 100644
+--- a/src/providers/email.ts
++++ b/src/providers/email.ts
+@@ -18,9 +18,21 @@ function bodyOf(raw: string): string {
+   return split.length > 1 ? split.slice(1).join("\n") : raw;
+ }
+ 
++function fromValue(block: string): string {
++  return block.match(/^From:\s*(.+)$/im)?.[1]?.trim() ?? "";
++}
++
++// La tienda sale del remitente original, no de palabras del cuerpo. Si el From del encabezado no es una tienda (reenvío interno), vale el From del bloque reenviado.
++function originalSender(raw: string): string {
++  const headerFrom = fromValue(raw.split(/\r?\n\r?\n/)[0] ?? "");
++  if (STORES.some((item) => item.test.test(headerFrom))) return headerFrom;
++  const forwarded = raw.match(/(?:Forwarded message|Mensaje reenviado)[\s\S]{0,500}?^From:\s*(.+)$/im);
++  return forwarded?.[1]?.trim() || headerFrom;
++}
++
+ export function parseDispatchEmail(raw: string): ParsedDispatch | { error: string } {
+   const text = bodyOf(raw);
+-  const store = STORES.find((item) => item.test.test(raw));
++  const store = STORES.find((item) => item.test.test(originalSender(raw)));
+   if (!store) return { error: "El correo no pertenece a una tienda cubierta." };
+   const order = raw.match(store.order);
+   if (!order?.[1]) return { error: `No se encontró el número de pedido de ${store.store}.` };
+diff --git a/tests/mail.test.ts b/tests/mail.test.ts
+index c8a11c2..6a626d8 100644
+--- a/tests/mail.test.ts
++++ b/tests/mail.test.ts
+@@ -3,6 +3,7 @@ import { mkdtempSync } from "node:fs";
+ import { tmpdir } from "node:os";
+ import { join } from "node:path";
+ import { TrackingStore } from "../src/data/store.ts";
++import { parseDispatchEmail } from "../src/providers/email.ts";
+ import { applyMessage } from "../src/providers/mailbox.ts";
+ import { messageText } from "../src/providers/mime.ts";
+ 
+@@ -72,4 +73,22 @@ describe("correo", () => {
+     expect(stores).toEqual(["amazon", "mercadolibre", "ebay", "alibaba", "homecenter"]);
+     store.close();
+   });
++
++  test("Mercado Libre con publicidad de Amazon se lee por el remitente", () => {
++    const raw = `From: envios@mercadolibre.com.co
++Subject: Tu compra fue enviada
++
++Hola, tu venta 2000009988776 ya va en camino.
++Transportadora: Interrapidisimo
++Código de seguimiento: 240012345678
++
++¿Compras también en Amazon? Vincula tu cuenta y recibe ofertas.
++`;
++    expect(parseDispatchEmail(raw)).toEqual({
++      store: "mercadolibre",
++      storeOrderNumber: "2000009988776",
++      trackingNumber: "240012345678",
++      carrier: "Interrapidisimo",
++    });
++  });
+ });

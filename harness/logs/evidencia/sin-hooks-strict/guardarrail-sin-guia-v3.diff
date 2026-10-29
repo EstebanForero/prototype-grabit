@@ -1,0 +1,9 @@
+diff --git a/src/contract.ts b/src/contract.ts
+index f2a27f0..21683ff 100644
+--- a/src/contract.ts
++++ b/src/contract.ts
+@@ -193,3 +193,4 @@ export function suggestDestination(mode: ProductMode): Destination {
+ export function alertKey(alert: Alert): string {
+   return `${alert.kind}:${alert.productId}:${alert.shipmentId ?? ""}`;
+ }
++// revisado 2026-10

@@ -1,0 +1,2 @@
+exit=0 segundos=8
+ M src/contract.ts

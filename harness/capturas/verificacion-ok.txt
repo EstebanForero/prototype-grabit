@@ -1,0 +1,9 @@
+$ bun scripts/verificar.ts
+(pass) normalización > separa etiqueta creada de movimiento real y conserva el texto [0.05ms]
+(pass) normalización > rechaza un número de pedido y acepta una guía [0.04ms]
+
+ 22 pass
+ 0 fail
+ 101 expect() calls
+Ran 22 tests across 3 files. [211.00ms]
+VERIFICACION OK

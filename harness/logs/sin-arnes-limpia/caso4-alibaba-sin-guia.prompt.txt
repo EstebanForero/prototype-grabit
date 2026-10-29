@@ -1,0 +1,9 @@
+Este es un correo de despacho de una tienda que parseDispatchEmail (src/providers/email.ts) no lee correctamente:
+
+From: notice@alibaba.com
+Subject: Order update
+
+Alibaba order 998877665544332 is being prepared.
+Tracking: pending, it will be shared when the parcel leaves the warehouse.
+
+Arregla el parser para que de ese correo extraiga bien la tienda, el número de pedido, la guía y la transportadora.

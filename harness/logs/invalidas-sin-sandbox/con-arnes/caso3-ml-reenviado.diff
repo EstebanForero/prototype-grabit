@@ -1,0 +1,67 @@
+diff --git a/harness/memoria/progreso.md b/harness/memoria/progreso.md
+index 1fe9485..1e38209 100644
+--- a/harness/memoria/progreso.md
++++ b/harness/memoria/progreso.md
+@@ -1,2 +1,3 @@
+ # Bitácora de progreso (memoria entre sesiones)
+ Formato: fecha · caso · cambio · resultado.
++2026-10-28 · caso3-ml-reenviado · la tienda se decide solo con el remitente (`From`), no con el cuerpo · VERIFICACION OK
+diff --git a/src/providers/email.ts b/src/providers/email.ts
+index 7d84fa6..a22b250 100644
+--- a/src/providers/email.ts
++++ b/src/providers/email.ts
+@@ -18,9 +18,15 @@ function bodyOf(raw: string): string {
+   return split.length > 1 ? split.slice(1).join("\n") : raw;
+ }
+ 
++/** La tienda sale del remitente. El cuerpo puede nombrar otra tienda en publicidad. */
++function senderOf(raw: string): string {
++  const head = raw.split(/\r?\n\r?\n/)[0] ?? "";
++  return head.match(/^from:\s*(.*)$/im)?.[1] ?? "";
++}
++
+ export function parseDispatchEmail(raw: string): ParsedDispatch | { error: string } {
+   const text = bodyOf(raw);
+-  const store = STORES.find((item) => item.test.test(raw));
++  const store = STORES.find((item) => item.test.test(senderOf(raw)));
+   if (!store) return { error: "El correo no pertenece a una tienda cubierta." };
+   const order = raw.match(store.order);
+   if (!order?.[1]) return { error: `No se encontró el número de pedido de ${store.store}.` };
+diff --git a/tests/mail.test.ts b/tests/mail.test.ts
+index c8a11c2..e4202ae 100644
+--- a/tests/mail.test.ts
++++ b/tests/mail.test.ts
+@@ -3,6 +3,7 @@ import { mkdtempSync } from "node:fs";
+ import { tmpdir } from "node:os";
+ import { join } from "node:path";
+ import { TrackingStore } from "../src/data/store.ts";
++import { parseDispatchEmail } from "../src/providers/email.ts";
+ import { applyMessage } from "../src/providers/mailbox.ts";
+ import { messageText } from "../src/providers/mime.ts";
+ 
+@@ -59,6 +60,25 @@ describe("correo", () => {
+     store.close();
+   });
+ 
++  test("un correo de Mercado Libre que nombra Amazon en el pie sigue siendo de Mercado Libre", () => {
++    const raw = [
++      "From: envios@mercadolibre.com.co",
++      "Subject: Tu compra fue enviada",
++      "",
++      "Hola, tu venta 2000009988776 ya va en camino.",
++      "Transportadora: Interrapidisimo",
++      "Código de seguimiento: 240012345678",
++      "",
++      "¿Compras también en Amazon? Vincula tu cuenta y recibe ofertas.",
++    ].join("\n");
++    expect(parseDispatchEmail(raw)).toEqual({
++      store: "mercadolibre",
++      storeOrderNumber: "2000009988776",
++      trackingNumber: "240012345678",
++      carrier: "Interrapidisimo",
++    });
++  });
++
+   test("los cinco ejemplos se reconocen aunque el sobre venga solo dentro del archivo", async () => {
+     const dir = mkdtempSync(join(tmpdir(), "grabit-mail-"));
+     const store = TrackingStore.open(join(dir, "test.sqlite"), { now: () => "2026-10-04T12:00:00.000Z" });

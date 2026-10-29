@@ -1,0 +1,1 @@
+error: sandbox reports bwrap but required hook write-deny mounts are missing or writable (required hook write-deny path is not effectively read-only: /home/box/.grok/trusted_folders.toml); refusing to start (possible __GROK_INSIDE_BWRAP spoof)
