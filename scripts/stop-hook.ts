@@ -8,11 +8,14 @@ const ev = JSON.parse((await Bun.stdin.text()) || "{}");
 const sid = String(ev.sessionId ?? ev.session_id ?? "sin-sesion");
 mkdirSync(".harness-state", { recursive: true });
 const f = `.harness-state/intentos-${sid}`;
-const n = existsSync(f) ? Number(readFileSync(f, "utf8")) : 0;
+const raw = existsSync(f) ? readFileSync(f, "utf8").trim() : "0";
+if (raw === "humana") process.exit(0); // ya se marcó para revisión humana: no repetir la línea
+const n = Number(raw);
 const r = spawnSync("bun", ["scripts/verificar.ts"], { encoding: "utf8" });
 if (r.status === 0) process.exit(0);
 if (n >= 3) {
   appendFileSync("harness/memoria/progreso.md", `\n- ${new Date().toISOString()} sesión ${sid}: 3 intentos fallidos, REQUIERE REVISION HUMANA.\n`);
+  writeFileSync(f, "humana");
   process.exit(0);
 }
 writeFileSync(f, String(n + 1));

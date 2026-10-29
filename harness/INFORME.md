@@ -1,7 +1,7 @@
 # Taller Harness Engineering — prototype-grabit
 
 **Tarea del agente:** arreglar `parseDispatchEmail` (`src/providers/email.ts`) para que lea un correo de despacho nuevo. El prompt fue el mismo en todas las corridas (está en `harness/correr.sh`).
-**Agente:** Grok CLI 1.0.70 en modo headless (`grok -p`, `--sandbox strict`, `--max-turns 40`). Cada corrida es una sesión nueva en una copia limpia (`git archive`) que no incluye los esperados ni el evaluador.
+**Agente:** Grok CLI 1.0.70 en modo headless (`grok -p`, `--sandbox strict`, `--max-turns 40`) para las corridas medidas (base, v1, v2, v3). Las corridas de evidencia de hooks, el revisor y las de retomar usaron `--sandbox workspace` (`harness/correr-extra.sh`), porque bajo strict los hooks no corren. Cada corrida es una sesión nueva en una copia limpia (`git archive`) que no incluye los esperados ni el evaluador.
 **Evaluación:** `harness/evaluar.ts` revisa los criterios C1 a C5 (ver AGENTS.md) y dos chequeos más: si las pruebas corren sin la carpeta temporal y si lee bien un correo reenviado.
 
 ## Tabla comparativa
@@ -43,9 +43,9 @@ Están en `harness/versiones/`: AGENTS v1/v2/v3, SKILL v1/v2/v3 y referencia v1/
   - `.githooks/pre-commit` bloquea commits que tocan archivos protegidos o que no pasan `verificar.ts`.
   - Lo probé directamente: editar `src/contract.ts` da exit 2, `git push` da exit 2 y el commit de contract.ts queda bloqueado.
   - **Hallazgo (errores.md, ciclo 3):** con `--sandbox strict`, Grok 1.0.70 no corre los hooks del proyecto (ni PreToolUse ni Stop). Lo medí con un hook de prueba. Por eso en las corridas strict (base, v1, v2, v3) el guardarraíl y el Stop hook no estaban activos, y lo que se midió fue la guía, la memoria y `verificar.ts`. Con `--sandbox strict` y sin AGENTS.md, Grok editó `src/contract.ts` (`logs/evidencia/sin-hooks-strict/`).
-  - **Bloqueo real** (`logs/evidencia/guardarrail-sin-guia-ws`, `--sandbox workspace`, sin AGENTS.md): "Hook denied: GUARDARRAIL: …/src/contract.ts es un archivo protegido", y el archivo quedó sin cambios (`capturas/hook-deny.png`). El guardarraíl niega también la lectura (`read_file`), lo cual es más estricto de lo necesario.
+  - **Bloqueo real** (`logs/evidencia/guardarrail-sin-guia-ws`, `--sandbox workspace`, sin AGENTS.md): "Hook denied: GUARDARRAIL: …/src/contract.ts es un archivo protegido", y el archivo quedó sin cambios (`capturas/hook-deny.png`). El guardarraíl también niega la lectura (`read_file`) de archivos protegidos, porque compara `target_file` sin mirar la herramienta. No era la intención: la meta era bloquear ediciones, y leer el contrato es inofensivo (y útil). Es demasiado amplio. El arreglo sería revisar solo las herramientas de edición y escritura. No lo cambié en esta ronda.
   - **Con AGENTS.md**, Grok se niega antes de llegar al hook (`logs/evidencia/sin-trust-hooks-no-cargados/guardarrail.*`).
-  - **REQUIERE REVISION HUMANA** (`logs/evidencia/revision-humana-ws`): era un caso imposible (el JSON pide DHL y el correo dice Alibaba Logistics). El Stop hook bloqueó 3 veces y luego escribió la línea en progreso.md. La escribió 2 veces porque el hook corrió de nuevo al final; es un defecto menor. En la corrida strict equivalente (sin hooks), Grok cambió el JSON esperado para que pasara, que es justo el riesgo que el hook frena.
+  - **REQUIERE REVISION HUMANA** (`logs/evidencia/revision-humana-ws`): era un caso imposible (el JSON pide DHL y el correo dice Alibaba Logistics). El Stop hook bloqueó 3 veces y luego escribió la línea en progreso.md. La escribió 2 veces porque el hook corrió de nuevo al final. Ya lo corregí: el archivo de estado queda en `humana` y las llamadas siguientes salen con 0 sin escribir. Lo verifiqué con 6 llamadas seguidas: las 1–3 bloquean (exit 2), las 4–6 salen con 0 y queda 1 sola línea (`capturas/stop-hook-dedupe.txt`). En la corrida strict equivalente (sin hooks), Grok cambió el JSON esperado para que pasara, que es justo el riesgo que el hook frena.
   - `grok inspect` muestra "Permissions: (none)": no usé reglas de permisos, solo hooks.
 - **Verificación (cap. 6):** `scripts/verificar.ts` revisa el caso, el corpus `harness/regresion/`, que ninguna prueba lea `harness/casos` y que `bun test` pase. El Stop hook (`scripts/stop-hook.ts`) lo vuelve a correr y bloquea el cierre hasta 3 veces. Después de eso anota REQUIERE REVISION HUMANA.
 - **Memoria (cap. 3):** `harness/memoria/progreso.md` y `decisiones.md`.
@@ -83,7 +83,14 @@ Las dejaría solo para tareas largas.
 v1 caso3 pasa C1–C5, pero falla t2 (correo reenviado), un chequeo que se agregó después en el ciclo 2. Ciclo 1 caso3 también lo falla. Ver `memoria/errores.md`.
 
 ## Revisor (otra sesión de Grok)
-`logs/evidencia/revisor-<caso>`: una sesión nueva, que no edita nada, revisó el cambio pendiente de cada caso v3 contra AGENTS.md y la referencia. Los veredictos están en la tabla de `logs/evidencia/RESUMEN.md`. Hay un artefacto del montaje: copié la memoria de la corrida sobre 4ac43ef, así que el diff "borra" secciones de errores.md que se escribieron después. El revisor lo marcó como fuera de alcance, pero no es un error de Grok.
+`logs/evidencia/revisor-<caso>`: una sesión nueva de Grok (`--sandbox workspace`, GROK_HOME aislado, sin editar nada) revisó el cambio pendiente de cada caso v3 contra AGENTS.md y la referencia.
+- Primera vuelta (montaje sobre 4ac43ef, `logs/evidencia/revisor-v1-artefacto/`): caso1, caso2 y caso4 salieron RECHAZADO solo por un artefacto mío. Copié la memoria de la corrida, así que el diff "borraba" secciones de errores.md escritas después.
+- Arreglo: `evidencia/revisor.post.sh` ahora aplica el diff grabado de la corrida (`logs/ciclo2/<caso>.diff`) sobre su propia base, d45c480. Comprobé que el diff que vio el revisor es idéntico al de la corrida.
+- Segunda vuelta (caso1, caso2 y caso4): **APROBADO, APROBADO, APROBADO** (194 s, 907 s, 186 s). caso3 y caso5 ya estaban APROBADO en la primera vuelta. Total: 5/5 aprobados.
+- Contaminación: ninguna llamada de herramienta de estas corridas tocó rutas fuera de su carpeta.
+
+## Retomar la base limpia
+`logs/evidencia/retomar-base`: ref 627b712 (la configuración de la base limpia, sin progreso.md), prompt "Continúa.", 10 turnos. Terminó con exit 1, "max turns reached", en 52 s. No hay estado que retomar, así que la base limpia no se puede retomar en una sesión nueva; eso lo da progreso.md, que se agregó después. La corrida además quedó **contaminada**: Grok leyó las sesiones de su GROK_HOME, la carpeta hermana `/workspace/runs/evidencia/retomar` y `/workspace/prototype-grabit`. Esto muestra que `--sandbox workspace` permite leer fuera del CWD. Por eso revisé las demás corridas workspace, y ninguna salió de su carpeta. El error de `cp progreso.md` al final es porque esa ref no tiene progreso.md.
 
 ## Capturas
 `harness/capturas/`: `hook-deny`, `verificacion-ok`, `revision-humana` y `corrida-grok-ciclo2-caso3`, en .txt y .png. Las imágenes se generaron a partir de los logs reales, no son capturas de pantalla.

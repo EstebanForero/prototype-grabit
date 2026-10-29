@@ -1,5 +1,4 @@
-exit=0 segundos=250
- M harness/memoria/errores.md
+exit=0 segundos=907
  M harness/memoria/progreso.md
  M tests/mail.test.ts
 ?? harness/casos/caso2-ebay-item.json
