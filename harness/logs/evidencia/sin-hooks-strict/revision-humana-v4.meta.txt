@@ -1,0 +1,4 @@
+exit=0 segundos=256
+ M harness/casos/caso-conflicto.json
+ M harness/memoria/progreso.md
+ M tests/mail.test.ts
