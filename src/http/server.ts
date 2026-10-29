@@ -212,7 +212,8 @@ if (import.meta.main) {
           return Response.json({ ok: true, to: sent.to, host: sent.host, port: sent.port });
         }
         if (request.method === "POST" && url.pathname === "/api/correo/ejemplos") {
-          const files = ["amazon.txt", "mercadolibre.txt", "ebay.txt", "alibaba.txt", "homecenter.txt"];
+          const files = ["amazon.txt", "mercadolibre.txt", "ebay.txt", "alibaba.txt", "homecenter.txt",
+            "caso1-amazon-es.txt", "caso3-ml-reenviado.txt", "caso5-homecenter-guia.txt", "caso4-alibaba-sin-guia.txt"];
           const items = [];
           for (const file of files) {
             const raw = await Bun.file(join(import.meta.dir, "../../fixtures/correos", file)).text();
