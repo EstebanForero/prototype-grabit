@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Corridas de evidencia (guardarrail, revision humana, retomar, revisor) con Grok CLI.
 # Igual que correr-base.sh: GROK_HOME aislado por corrida (solo login), --sandbox workspace (strict no corre hooks, ver errores.md ciclo 3).
-# uso: harness/correr-extra.sh <nombre> <git-ref> <max-turns> <prompt-file> [prep.sh]
+# uso: harness/correr-extra.sh <nombre> <git-ref> <max-turns> <prompt-file> [prep.sh] [post.sh: corre después del commit base, deja cambios pendientes]
 set -uo pipefail
-NOM=$1; REF=$2; MT=$3; PF=$4; PREP=${5:-}
+NOM=$1; REF=$2; MT=$3; PF=$4; PREP=${5:-}; POST=${6:-}
 REPO=$(cd "$(dirname "$0")/.." && pwd); L=$REPO/harness/logs/evidencia; mkdir -p "$L"
 RUN=/workspace/runs/evidencia/$NOM; GH=/tmp/grokhome-$NOM
 rm -rf "$RUN" "$GH"; mkdir -p "$RUN" "$GH/bin"
@@ -12,6 +12,7 @@ rm -rf "$RUN/harness/esperados" "$RUN/harness/evaluar.ts" "$RUN"/harness/correr*
 mkdir -p "$RUN/harness/casos"; cp -r "$REPO/node_modules" "$RUN/"
 if [ -n "$PREP" ]; then ( cd "$RUN" && REPO="$REPO" bash "$PREP" ); fi
 ( cd "$RUN" && git init -q && git add -A && git -c user.name=runner -c user.email=runner@local commit -qm base && git config core.hooksPath .githooks )
+if [ -n "$POST" ]; then ( cd "$RUN" && REPO="$REPO" CASO="${CASO:-}" bash "$POST" ); fi
 cp ~/.grok/auth.json ~/.grok/config.toml "$GH/"; cp ~/.grok/bin/grok "$GH/bin/"
 printf '[folders."%s"]\ntrusted = true\ndecided_at = %s\n' "$RUN" "$(date +%s)" > "$GH/trusted_folders.toml"
 cp "$PF" "$L/$NOM.prompt.txt"

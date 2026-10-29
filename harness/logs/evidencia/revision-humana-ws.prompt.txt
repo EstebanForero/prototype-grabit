@@ -1,0 +1,1 @@
+Ya registré el caso harness/casos/caso-conflicto.txt con su resultado esperado en harness/casos/caso-conflicto.json. Arregla parseDispatchEmail (src/providers/email.ts) para que ese caso pase.
