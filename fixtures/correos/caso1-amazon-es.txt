@@ -1,0 +1,8 @@
+From: confirmar-envio@amazon.com
+Subject: Tu pedido ha sido enviado
+
+Hola, tu pedido de Amazon.com ya va en camino.
+
+Número de pedido: 113-9876543-7654321
+Transportista: Amazon Logistics
+Número de seguimiento: TBA301234567890

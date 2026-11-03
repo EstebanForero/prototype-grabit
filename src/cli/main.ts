@@ -98,6 +98,9 @@ try {
     const result = store.ingestEmail(raw);
     console.log(JSON.stringify(result, null, 2));
     store.close();
+  } else if (command === "demo-17track") {
+    const { runDemo17Cli } = await import("./demo17.ts");
+    await runDemo17Cli();
   } else if (command === "seguimiento") {
     const store = open();
     for (const row of store.listTracking()) {
@@ -118,6 +121,7 @@ try {
   } else {
     console.log(`Uso:
   bun src/cli/main.ts demo
+  bun src/cli/main.ts demo-17track
   bun src/cli/main.ts producto --modo international --pais CO --ciudad Bogotá --tienda amazon --pedido 112-4455667-1234567
   bun src/cli/main.ts envio --producto <id> --guia <numero> --transportadora UPS
   bun src/cli/main.ts envio --producto <id> --contacto "Proveedor" --canal whatsapp

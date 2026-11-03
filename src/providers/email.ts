@@ -20,15 +20,19 @@ function bodyOf(raw: string): string {
 
 export function parseDispatchEmail(raw: string): ParsedDispatch | { error: string } {
   const text = bodyOf(raw);
-  const store = STORES.find((item) => item.test.test(raw));
+  // Primero el remitente: un correo de Mercado Libre puede mencionar Amazon en la publicidad.
+  const from = raw.match(/^From:\s*(.+)$/im)?.[1] ?? "";
+  const store = STORES.find((item) => item.test.test(from)) ?? STORES.find((item) => item.test.test(raw));
   if (!store) return { error: "El correo no pertenece a una tienda cubierta." };
   const order = raw.match(store.order);
   if (!order?.[1]) return { error: `No se encontró el número de pedido de ${store.store}.` };
   const tracking = text.match(
-    /(?:tracking(?:\s+id|\s+number)?|gu[ií]a|c[oó]digo de seguimiento|rastreo)\s*[:#]?\s*([A-Z0-9-]{8,40})/i,
+    /(?:tracking(?:\s+id|\s+number)?|gu[ií]a|(?:c[oó]digo|n[uú]mero) de seguimiento|rastreo)\s*[:#]?\s*([A-Z0-9-]*\d[A-Z0-9-]*)/i,
   );
-  if (!tracking?.[1]) return { error: "El correo no trae una guía." };
-  const carrier = text.match(/(?:carrier|transportadora|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i);
+  if (!tracking?.[1] || tracking[1].length < 8 || tracking[1].length > 40) return { error: "El correo no trae una guía." };
+  const carrier =
+    text.match(/(?:carrier|transportadora|transportista|enviado con|shipped with)\s*[:#]?\s*([A-Za-z][A-Za-z0-9 .'-]{1,40})/i) ??
+    text.match(new RegExp(`${tracking[1]}\\s*\\(([A-Za-z][A-Za-z0-9 .'-]{1,40})\\)`));
   return {
     store: store.store,
     storeOrderNumber: order[1],

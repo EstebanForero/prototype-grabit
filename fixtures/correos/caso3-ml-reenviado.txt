@@ -1,0 +1,8 @@
+From: envios@mercadolibre.com.co
+Subject: Tu compra fue enviada
+
+Hola, tu venta 2000009988776 ya va en camino.
+Transportadora: Interrapidisimo
+Código de seguimiento: 240012345678
+
+¿Compras también en Amazon? Vincula tu cuenta y recibe ofertas.

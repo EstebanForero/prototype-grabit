@@ -1,0 +1,5 @@
+From: notice@alibaba.com
+Subject: Order update
+
+Alibaba order 998877665544332 is being prepared.
+Tracking: pending, it will be shared when the parcel leaves the warehouse.
