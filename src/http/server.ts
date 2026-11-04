@@ -10,7 +10,8 @@ import {
   type MailboxConfig,
 } from "../providers/mailbox.ts";
 import { sendDispatch } from "../providers/smtp.ts";
-import { track17FromEnv, track17Status } from "../providers/track17.ts";
+import { track17Client, track17FromEnv, track17Status, track17WebhookSign } from "../providers/track17.ts";
+import { runDemo17 } from "../cli/demo17.ts";
 import { parseAggregatorWebhook, signatureMatches } from "../providers/webhook.ts";
 
 const secret = process.env.AGGREGATOR_SECRET ?? "dev-secret";
@@ -56,6 +57,24 @@ export async function handleAggregatorRequest(store: TrackingStore, request: Req
       }),
     );
   }
+  return Response.json({ received: events.length, results });
+}
+
+/** Webhook nativo de 17TRACK (TRACKING_UPDATED). Con TRACK17_TOKEN exige el encabezado "sign". */
+export async function handleTrack17Webhook(store: TrackingStore, request: Request, token: string | undefined): Promise<Response> {
+  const body = await request.text();
+  if (token && request.headers.get("sign") !== track17WebhookSign(body, token)) {
+    return Response.json({ error: "Firma de 17TRACK inválida." }, { status: 401 });
+  }
+  let payload: unknown;
+  try {
+    payload = JSON.parse(body);
+  } catch {
+    return Response.json({ error: "El cuerpo no es JSON." }, { status: 400 });
+  }
+  const events = parseAggregatorWebhook(payload);
+  if (events.length === 0) return Response.json({ received: 0 });
+  const results = events.map((event) => store.ingestObservation({ ...event, raw: payload, source: "aggregator" }));
   return Response.json({ received: events.length, results });
 }
 
@@ -140,6 +159,14 @@ if (import.meta.main) {
       try {
         if (request.method === "GET" && (url.pathname === "/health" || url.pathname === "/api/salud")) {
           return Response.json({ ok: true, service: "grabit-seguimiento", track17: track17Status(track17) });
+        }
+        if (request.method === "POST" && url.pathname === "/webhook/17track") {
+          return handleTrack17Webhook(store, request, process.env.TRACK17_TOKEN?.trim() || undefined);
+        }
+        if (request.method === "POST" && url.pathname === "/api/demo/17track") {
+          const client = track17Client();
+          const steps = await runDemo17(store, client, join(import.meta.dir, "../../fixtures/correos"));
+          return Response.json({ mode: client.mode, steps });
         }
         if (request.method === "GET" && (url.pathname === "/seguimiento" || url.pathname === "/api/seguimiento")) {
           return Response.json(store.listTracking());

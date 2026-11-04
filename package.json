@@ -7,10 +7,11 @@
   "scripts": {
     "test": "bun test",
     "demo": "bun src/cli/main.ts demo",
+    "demo:17track": "bun src/cli/main.ts demo-17track",
     "seguimiento": "bun src/cli/main.ts seguimiento",
     "start": "bun src/http/server.ts",
     "enviar": "bun src/cli/enviar.ts",
-    "consola": "cd web && bun install && bun run build",
+    "consola": "cd web && bun install && bun run build && cd .. && bun src/http/server.ts",
     "webhook": "bun src/http/server.ts",
     "check": "bun test"
   },
