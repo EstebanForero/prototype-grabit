@@ -53,6 +53,8 @@ export type TrackingRow = {
   status: string;
   statusLabel: string;
   daysInStatus: number;
+  trackingNumber: string | null;
+  carrier: string | null;
   clientLabel: string;
   held: boolean;
   holdReason: string | null;
@@ -62,6 +64,6 @@ export type TrackingRow = {
 export type Dossier = {
   product: { id: string; status: string };
   clientLabel: string;
-  shipments: Array<{ id: string; trackingNumber?: string; contactName?: string; destination: string; mode: string; recordStatus: string; intake: string }>;
+  shipments: Array<{ id: string; trackingNumber?: string; carrier?: string; contactName?: string; destination: string; mode: string; recordStatus: string; intake: string }>;
   decisions: Array<{ outcome: string; status: string; reason: string }>;
 };

@@ -124,7 +124,7 @@ export async function scanMailbox(store: TrackingStore, config: MailboxConfig, o
     const lock = await client.getMailboxLock(config.mailbox);
     try {
       const since = new Date(Date.now() - sinceDays * 86_400_000);
-      const found = await client.search({ since });
+      const found = await client.search({ since }, { uid: true });
       const uids = (found || []).slice(-limit);
       for (const uid of uids) {
         const message = await client.fetchOne(String(uid), { source: true, envelope: true }, { uid: true });

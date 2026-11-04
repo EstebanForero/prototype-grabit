@@ -18,11 +18,22 @@ function bodyOf(raw: string): string {
   return split.length > 1 ? split.slice(1).join("\n") : raw;
 }
 
+function fromValue(block: string): string {
+  return block.match(/^From:\s*(.+)$/im)?.[1]?.trim() ?? "";
+}
+
+// La tienda sale del remitente original, no de palabras del cuerpo. Si el From del encabezado no es una tienda (reenvío interno), vale el From del bloque reenviado.
+function originalSender(raw: string): string {
+  const headerFrom = fromValue(raw.split(/\r?\n\r?\n/)[0] ?? "");
+  if (STORES.some((item) => item.test.test(headerFrom))) return headerFrom;
+  const forwarded = raw.match(/(?:Forwarded message|Mensaje reenviado)[\s\S]{0,500}?^From:\s*(.+)$/im);
+  return forwarded?.[1]?.trim() || headerFrom;
+}
+
 export function parseDispatchEmail(raw: string): ParsedDispatch | { error: string } {
   const text = bodyOf(raw);
-  // Primero el remitente: un correo de Mercado Libre puede mencionar Amazon en la publicidad.
-  const from = raw.match(/^From:\s*(.+)$/im)?.[1] ?? "";
-  const store = STORES.find((item) => item.test.test(from)) ?? STORES.find((item) => item.test.test(raw));
+  // El remitente original manda: un correo de Mercado Libre puede mencionar Amazon en la publicidad.
+  const store = STORES.find((item) => item.test.test(originalSender(raw))) ?? STORES.find((item) => item.test.test(raw));
   if (!store) return { error: "El correo no pertenece a una tienda cubierta." };
   const order = raw.match(store.order);
   if (!order?.[1]) return { error: `No se encontró el número de pedido de ${store.store}.` };
@@ -37,6 +48,6 @@ export function parseDispatchEmail(raw: string): ParsedDispatch | { error: strin
     store: store.store,
     storeOrderNumber: order[1],
     trackingNumber: tracking[1].trim(),
-    carrier: carrier?.[1]?.trim(),
+    carrier: (carrier?.[1] ?? tracking[2])?.trim(),
   };
 }
