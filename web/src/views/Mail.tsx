@@ -80,7 +80,9 @@ export function Mail({ onLinked }: { onLinked: () => void }) {
           password: "",
         }));
         setWatching(Boolean(config.watching));
-        setStatus(`Buzón guardado para ${config.user}. La clave no se muestra.`);
+        setStatus(config.watching
+          ? `Leyendo ${config.user} cada 45 segundos. La clave no se muestra.`
+          : `Buzón guardado para ${config.user}. La clave no se muestra.`);
       })
       .catch((cause: unknown) => setStatus(cause instanceof Error ? cause.message : "No se pudo leer el buzón."));
     void refresh().catch((cause: unknown) => setStatus(cause instanceof Error ? cause.message : "No se pudo leer los procesos."));
@@ -230,7 +232,7 @@ export function Mail({ onLinked }: { onLinked: () => void }) {
         <h2 className="text-2xl font-semibold">Leer el buzón de despacho</h2>
       </div>
       <p className="max-w-3xl text-sm text-muted-foreground">
-        Esta pantalla registra la cuenta, entrega el aviso por el correo del proveedor y muestra las extracciones. El producto se registra antes, en Registrar compra. IMAP no avisa solo: con la vigilancia activa el servidor vuelve a abrir la bandeja cada 45 segundos.
+        Esta pantalla registra la cuenta, entrega el aviso por el correo del proveedor y muestra las extracciones. El producto se registra antes, en Registrar compra. Si la cuenta ya está en el entorno, el servidor abre la bandeja al arrancar y vuelve a leerla cada 45 segundos.
       </p>
       <Card>
         <CardHeader>

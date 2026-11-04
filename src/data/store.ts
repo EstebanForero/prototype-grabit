@@ -237,6 +237,12 @@ export class TrackingStore {
     return { voidedId: current.id, replacementId: replacement.shipmentId };
   }
 
+  nameCarrier(trackingNumber: string, carrier: string): void {
+    this.db
+      .query("UPDATE shipments SET carrier = ? WHERE tracking_number = ? AND (carrier IS NULL OR carrier = '')")
+      .run(carrier, trackingNumber);
+  }
+
   addNote(shipmentId: string, author: string, text: string): void {
     this.db
       .query("INSERT INTO notes (id, shipment_id, author, text, created_at) VALUES (?, ?, ?, ?, ?)")
@@ -269,8 +275,25 @@ export class TrackingStore {
       input.code,
       input.text,
     ].join("|");
-    const exists = this.db.query("SELECT id FROM observations WHERE dedupe_key = ?").get(dedupe);
-    if (exists) return { duplicate: true, decisions: [], events: [] };
+    const exists = this.db.query("SELECT id FROM observations WHERE dedupe_key = ?").get(dedupe) as { id: string } | null;
+    if (exists) {
+      this.db
+        .query(
+          `UPDATE observations
+           SET city = COALESCE(city, ?), country = COALESCE(country, ?),
+               reported_city = COALESCE(reported_city, ?), reported_country = COALESCE(reported_country, ?)
+           WHERE id = ?`,
+        )
+        .run(
+          input.city ?? null,
+          input.country ?? null,
+          input.reportedDestinationCity ?? null,
+          input.reportedDestinationCountry ?? null,
+          exists.id,
+        );
+      this.reprocessProducts(shipment.productIds);
+      return { duplicate: true, decisions: [], events: [] };
+    }
 
     const productIds = shipment.productIds;
     const before = new Map(productIds.map((id) => [id, this.alertsOf(id)]));

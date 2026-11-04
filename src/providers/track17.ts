@@ -46,6 +46,12 @@ export function carrierCode(name?: string): number | undefined {
   return name ? CARRIER_CODES[name.toLowerCase().replace(/[^a-z]/g, "")] : undefined;
 }
 
+export function carrierName(code?: number): string | undefined {
+  if (code == null) return undefined;
+  const name = Object.entries(CARRIER_CODES).find(([, value]) => value === code)?.[0];
+  return name ? name.toUpperCase() : undefined;
+}
+
 export interface Track17Event {
   time_iso: string;
   description: string;
@@ -71,10 +77,22 @@ export interface Track17Response<T> {
   data: { accepted: T[]; rejected: Array<{ number: string; error: { code: number; message: string } }> };
 }
 
+export interface Track17Listed {
+  number: string;
+  carrier?: number;
+  packageStatus?: string;
+  registerTime?: string;
+  orderNumber?: string;
+  originCountry?: string;
+  destinationCountry?: string;
+}
+
 export interface Track17Client {
   mode: "live" | "mock";
   register(items: Array<{ number: string; carrier?: number }>): Promise<Track17Response<{ number: string; carrier: number }>>;
   getTrackInfo(items: Array<{ number: string; carrier?: number }>): Promise<Track17Response<Track17Info>>;
+  /** Guías ya registradas en la cuenta. No gasta la cuota de consultas de seguimiento. */
+  listRegistered(): Promise<Track17Listed[]>;
 }
 
 export function liveClient(token: string, fetcher: typeof fetch = fetch): Track17Client {
@@ -89,10 +107,42 @@ export function liveClient(token: string, fetcher: typeof fetch = fetch): Track1
     if (json.code !== 0) throw new Error(`17TRACK devolvió code=${json.code} en ${path}.`);
     return json;
   }
+  async function listRegistered(): Promise<Track17Listed[]> {
+    const found: Track17Listed[] = [];
+    for (let page = 1; page <= 10; page += 1) {
+      const response = await fetcher(`${TRACK17_API}/gettracklist`, {
+        method: "POST",
+        headers: { "17token": token, "Content-Type": "application/json" },
+        body: JSON.stringify({ page_no: page, order_by: "RegisterTimeDesc" }),
+      });
+      if (!response.ok) throw new Error(`17TRACK respondió ${response.status} en gettracklist.`);
+      const json = (await response.json()) as {
+        code?: number;
+        data?: { accepted?: Array<{ number?: string; carrier?: number; package_status?: string; register_time?: string; order_no?: string; shipping_country?: string; recipient_country?: string }>; page?: { page_total?: number } };
+      };
+      if (json.code !== 0) throw new Error(`17TRACK devolvió code=${json.code} en gettracklist.`);
+      for (const item of json.data?.accepted ?? []) {
+        if (item.number) found.push({
+          number: item.number,
+          carrier: item.carrier,
+          packageStatus: item.package_status,
+          registerTime: item.register_time,
+          orderNumber: item.order_no,
+          originCountry: item.shipping_country,
+          destinationCountry: item.recipient_country,
+        });
+      }
+      const batch = json.data?.accepted ?? [];
+      const pages = json.data?.page?.page_total;
+      if (pages != null ? page >= pages : batch.length < 40) break;
+    }
+    return found;
+  }
   return {
     mode: "live",
     register: (items) => call("register", items),
     getTrackInfo: (items) => call("gettrackinfo", items),
+    listRegistered,
   };
 }
 
@@ -169,6 +219,9 @@ export function mockClient(): Track17Client {
     async getTrackInfo(items) {
       return { code: 0, data: { accepted: items.map((i) => recorded(i.number)), rejected: [] } };
     },
+    async listRegistered() {
+      return Object.entries(RECORDED).map(([number, story]) => ({ number, carrier: story.carrier, packageStatus: story.events[0]?.stage }));
+    },
   };
 }
 
@@ -191,20 +244,34 @@ export function observationsFrom(info: Track17Info) {
     return [{ ...normalizeCarrierEvent({ timeIso: new Date().toISOString(), description: "17TRACK: guía no encontrada", status: "NotFound" }), trackingNumber: info.number }];
   }
   return events
+    .filter((event) => !Number.isNaN(Date.parse(event.time_iso)))
     .slice()
     .sort((a, b) => Date.parse(a.time_iso) - Date.parse(b.time_iso))
-    .map((e) => ({
-      trackingNumber: info.number,
-      ...normalizeCarrierEvent({
-        timeIso: new Date(e.time_iso).toISOString(),
-        description: e.description,
-        status: e.stage ?? undefined,
-        city: e.address?.city ?? undefined,
-        country: e.address?.country ?? undefined,
-        destinationCity: dest?.city ?? undefined,
-        destinationCountry: dest?.country ?? undefined,
-      }),
-    }));
+    .map((event) => {
+      const place = placeFromLocation(event.location);
+      return {
+        trackingNumber: info.number,
+        ...normalizeCarrierEvent({
+          timeIso: new Date(event.time_iso).toISOString(),
+          description: event.description,
+          status: event.stage ?? undefined,
+          city: event.address?.city || place.city,
+          country: event.address?.country || place.country,
+          destinationCity: dest?.city ?? undefined,
+          destinationCountry: dest?.country ?? undefined,
+        }),
+      };
+    });
+}
+
+/** "LONGVIEW, TX, US" trae la ciudad y el país cuando address viene vacío. */
+function placeFromLocation(location?: string | null): { city?: string; country?: string } {
+  if (!location) return {};
+  const parts = location.split(",").map((part) => part.trim()).filter(Boolean);
+  if (parts.length === 0) return {};
+  const last = parts[parts.length - 1] ?? "";
+  const country = /^[A-Za-z]{2}$/.test(last) ? last.toUpperCase() : undefined;
+  return { city: parts[0], country };
 }
 
 /** Firma del webhook de 17TRACK: sha256(cuerpo + "/" + 17token), en el encabezado "sign". */

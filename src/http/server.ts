@@ -10,6 +10,7 @@ import {
   type MailboxConfig,
 } from "../providers/mailbox.ts";
 import { sendDispatch } from "../providers/smtp.ts";
+import { followGuide, pullRegistered } from "../providers/track17-sync.ts";
 import { track17Client, track17FromEnv, track17Status, track17WebhookSign } from "../providers/track17.ts";
 import { runDemo17 } from "../cli/demo17.ts";
 import { parseAggregatorWebhook, signatureMatches } from "../providers/webhook.ts";
@@ -151,6 +152,13 @@ if (import.meta.main) {
   mkdirSync(dirname(database), { recursive: true });
   loadMailboxFile();
   const store = TrackingStore.open(database);
+  if (mailbox) startWatch(store, watchSinceDays);
+  const trackClient = track17Client();
+  if (trackClient.mode === "live") {
+    void pullRegistered(store, trackClient)
+      .then((result) => console.log(`17TRACK: ${result.saved.length} de ${result.total} guías guardadas.`))
+      .catch((error: unknown) => console.error(error instanceof Error ? error.message : "No se pudo traer 17TRACK."));
+  }
 
   Bun.serve({
     port,
@@ -162,6 +170,15 @@ if (import.meta.main) {
         }
         if (request.method === "POST" && url.pathname === "/webhook/17track") {
           return handleTrack17Webhook(store, request, process.env.TRACK17_TOKEN?.trim() || undefined);
+        }
+        if (request.method === "POST" && url.pathname === "/api/17track/traer") {
+          return Response.json(await pullRegistered(store, track17Client()));
+        }
+        if (request.method === "POST" && url.pathname === "/api/17track/consultar") {
+          const body = await readJson(request);
+          const number = text(body.number) ?? text(body.trackingNumber);
+          if (!number) return Response.json({ error: "Falta el número de guía." }, { status: 400 });
+          return Response.json(await followGuide(store, track17Client(), number));
         }
         if (request.method === "POST" && url.pathname === "/api/demo/17track") {
           const client = track17Client();
@@ -209,6 +226,7 @@ if (import.meta.main) {
             password,
             mailbox: text(body.mailbox) ?? "INBOX",
           });
+          if (!watchTimer) startWatch(store, watchSinceDays);
           return Response.json(mailboxView());
         }
         if (request.method === "POST" && url.pathname === "/api/correo/probar") {

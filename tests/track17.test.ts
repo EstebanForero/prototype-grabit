@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { TrackingStore } from "../src/data/store.ts";
 import { parseDispatchEmail } from "../src/providers/email.ts";
 import { liveClient, mockClient, observationsFrom, track17Client, track17WebhookSign } from "../src/providers/track17.ts";
+import { pullRegistered } from "../src/providers/track17-sync.ts";
 import { runDemo17 } from "../src/cli/demo17.ts";
 import { handleTrack17Webhook } from "../src/http/server.ts";
 
@@ -44,9 +45,35 @@ describe("17TRACK v2.2", () => {
     expect(track17Client({ TRACK17_TOKEN: "x" }).mode).toBe("live");
     expect(() => track17Client({ TRACK17_MODE: "live" })).toThrow();
   });
+  test("traer las registradas actualiza la guía que ya está en Grab It", async () => {
+    const store = TrackingStore.open(":memory:", { now: () => "2026-11-03T18:00:00.000Z" });
+    const product = store.registerProduct({ mode: "international", customerCountry: "CO", customerCity: "Bogotá", store: "amazon", storeOrderNumber: "112-4455667-1234567" });
+    store.registerShipment({ productIds: [product.id], trackingNumber: "1Z999AA10123456784", carrier: "UPS", registeredAt: "2026-10-27T00:00:00.000Z" });
+    const result = await pullRegistered(store, mockClient());
+    expect(result.updated).toContain("1Z999AA10123456784");
+    expect(result.total).toBeGreaterThan(1);
+    expect(store.listTracking().find((row) => row.trackingNumber === "1Z999AA10123456784")?.statusLabel).toBe("En bodega");
+    expect(store.listTracking().length).toBe(result.total);
+    await pullRegistered(store, mockClient());
+    expect(store.listTracking().length).toBe(result.total);
+  });
   test("eventos en orden cronológico", async () => {
     const info = (await mockClient().getTrackInfo([{ number: "1Z999AA10123456784" }])).data.accepted[0]!;
     expect(observationsFrom(info).map((o) => o.code)).toEqual(["label_created", "picked_up", "in_transit", "in_transit", "delivered"]);
+    const placed = observationsFrom({
+      number: "1",
+      carrier: 0,
+      track_info: {
+        latest_status: { status: "Delivered" },
+        latest_event: null,
+        tracking: { providers: [{ provider: { key: 0, name: "UPS" }, events: [
+          { time_iso: "", description: "sin fecha", location: "X", stage: "InfoReceived" },
+          { time_iso: "2025-12-05T10:29:38-06:00", description: "Delivered, DELIVERED", location: "LONGVIEW, TX, US", stage: "Delivered" },
+        ] }] },
+      },
+    });
+    expect(placed).toHaveLength(1);
+    expect(placed[0]).toMatchObject({ code: "delivered", city: "LONGVIEW", country: "US" });
   });
   test("demo completa: correo -> 17TRACK -> estado", async () => {
     let now = "2026-10-27T00:00:00.000Z";

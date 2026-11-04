@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
 import type { Dossier, TrackingRow } from "@/lib/types";
 
@@ -9,6 +10,9 @@ export function Board({ active }: { active: boolean }) {
   const [rows, setRows] = useState<TrackingRow[]>([]);
   const [error, setError] = useState("");
   const [dossier, setDossier] = useState<Dossier | null>(null);
+  const [guide, setGuide] = useState("");
+  const [trackNote, setTrackNote] = useState("");
+  const [pulling, setPulling] = useState(false);
 
   async function load() {
     try {
@@ -20,7 +24,10 @@ export function Board({ active }: { active: boolean }) {
   }
 
   useEffect(() => {
-    if (active) void load();
+    if (!active) return;
+    void load();
+    const timer = setInterval(() => void load(), 15_000);
+    return () => clearInterval(timer);
   }, [active]);
 
   const attention = rows.filter((row) => row.alerts.length || row.held).length;
@@ -34,6 +41,20 @@ export function Board({ active }: { active: boolean }) {
         </div>
         <Button type="button" variant="outline" onClick={() => void load()}>Actualizar</Button>
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>17TRACK</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <p className="text-sm text-muted-foreground">Trae las guías que ya están en la cuenta de 17TRACK y las deja guardadas en esta cola.</p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input value={guide} onChange={(event) => setGuide(event.target.value)} placeholder="Número de guía real" />
+            <Button type="button" disabled={pulling || guide.trim() === ""} onClick={() => void consultGuide(guide, setTrackNote, setError, setPulling, load)}>Consultar</Button>
+            <Button type="button" variant="outline" disabled={pulling} onClick={() => void pullTracks(setTrackNote, setError, setPulling, load)}>Traer registradas</Button>
+          </div>
+          {trackNote && <p className="text-sm text-muted-foreground">{trackNote}</p>}
+        </CardContent>
+      </Card>
       <div className="grid gap-3 sm:grid-cols-3">
         <Metric label="Productos" value={rows.length} />
         <Metric label="Con alerta o retención" value={attention} />
@@ -58,7 +79,7 @@ export function Board({ active }: { active: boolean }) {
             </div>
             <div className="flex flex-wrap gap-2">
               {row.held ? <Badge variant="hold">retenido</Badge> : <Badge variant="secondary">{row.clientLabel}</Badge>}
-              {row.alerts.map((alert) => <Badge key={alert.kind} variant="alert">{alert.kind}</Badge>)}
+              {row.alerts.map((alert) => <Badge key={alert.kind} variant="alert">{alertLabel(alert.kind)}</Badge>)}
               {!row.alerts.length && <span className="text-sm text-muted-foreground">{row.holdReason || "Sin alertas"}</span>}
             </div>
             <Button type="button" variant="outline" size="sm" onClick={() => void openDossier(row.productId, setDossier, setError)}>Ficha</Button>
@@ -94,15 +115,56 @@ export function Board({ active }: { active: boolean }) {
   );
 }
 
+function alertLabel(kind: string): string {
+  const labels: Record<string, string> = {
+    needs_review: "Revisión",
+    destination_mismatch: "Destino",
+    tracking_not_found: "Sin guía",
+    stale: "Sin novedad",
+    missing_next_guide: "Falta guía",
+    partial_delivery: "Entrega parcial",
+    ask_due: "Preguntar",
+  };
+  return labels[kind] ?? kind;
+}
+
 function Metric({ label, value }: { label: string; value: number }) {
   return (
     <Card>
-      <CardContent>
-        <p className="text-3xl font-semibold text-navy">{value}</p>
+      <CardContent className="border-l-4 border-l-accent">
+        <p className="text-3xl font-semibold tracking-tight text-navy">{value}</p>
         <p className="text-sm text-muted-foreground">{label}</p>
       </CardContent>
     </Card>
   );
+}
+
+async function pullTracks(setNote: (message: string) => void, setError: (message: string) => void, setPulling: (value: boolean) => void, reload: () => Promise<void>) {
+  setPulling(true);
+  setError("");
+  try {
+    const result = await api<{ total: number; saved: string[]; failed: string[] }>("/api/17track/traer", { method: "POST" });
+    setNote(`17TRACK tiene ${result.total} guías. Quedaron guardadas ${result.saved.length}.`);
+    await reload();
+  } catch (cause) {
+    setError(cause instanceof Error ? cause.message : "No se pudo traer 17TRACK.");
+  } finally {
+    setPulling(false);
+  }
+}
+
+async function consultGuide(number: string, setNote: (message: string) => void, setError: (message: string) => void, setPulling: (value: boolean) => void, reload: () => Promise<void>) {
+  setPulling(true);
+  setError("");
+  try {
+    const result = await api<{ number: string; status: string | null }>("/api/17track/consultar", { method: "POST", body: JSON.stringify({ number }) });
+    setNote(`${result.number}: ${result.status ?? "sin estado"}.`);
+    await reload();
+  } catch (cause) {
+    setError(cause instanceof Error ? cause.message : "No se pudo consultar la guía.");
+  } finally {
+    setPulling(false);
+  }
 }
 
 async function openDossier(id: string, setDossier: (dossier: Dossier) => void, setError: (message: string) => void) {

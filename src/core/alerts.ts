@@ -94,7 +94,7 @@ export function alertsForProduct(
       });
     }
 
-    if (own.some((item) => item.occurredAt < shipment.registeredAt)) {
+    if (own.some((item) => item.occurredAt >= "2000-01-01" && item.occurredAt < shipment.registeredAt)) {
       alerts.push({
         kind: "needs_review",
         productId: product.id,

@@ -42,12 +42,18 @@
   --border: #d7e0e5;
   --input: #d7e0e5;
   --ring: #176b87;
-  --radius: 0.65rem;
+  --radius: 0.9rem;
 }
 
 @layer base {
   * { @apply border-border; }
-  body { @apply bg-background font-sans text-foreground antialiased; }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    background-image:
+      radial-gradient(900px 420px at 0% -10%, rgb(100 204 197 / 0.22), transparent 55%),
+      radial-gradient(700px 380px at 100% 0%, rgb(23 50 77 / 0.08), transparent 50%);
+    background-attachment: fixed;
+  }
 }
 
 @keyframes rise {
