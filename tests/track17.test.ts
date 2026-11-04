@@ -76,3 +76,34 @@ describe("17TRACK v2.2", () => {
     expect(store.listTracking()[0]!.statusLabel).toBe("Entregado");
   });
 });
+
+describe("demo 17TRACK sin eventos", () => {
+  const fakeWith = (register: unknown, info: unknown) =>
+    (async (url: string) => Response.json(String(url).endsWith("/register") ? register : info)) as unknown as typeof fetch;
+
+  test("aceptada pero 0 eventos: estado actual y nota", async () => {
+    const fetcher = fakeWith(
+      { code: 0, data: { accepted: [{ number: "x", carrier: 0 }], rejected: [] } },
+      { code: 0, data: { accepted: [], rejected: [] } },
+    );
+    const steps = await runDemo17(TrackingStore.open(":memory:"), liveClient("tok", fetcher), fixtures, ["mercadolibre.txt"]);
+    const s = steps[0]!;
+    expect(s.status).toBeDefined();
+    expect(s.status).not.toBe("undefined");
+    expect(s.client).toBeDefined();
+    expect(s.events).toEqual([]);
+    expect(s.note).toContain("sin eventos de 17TRACK todavía");
+  });
+
+  test("register rechazado: estado actual y motivo", async () => {
+    const fetcher = fakeWith(
+      { code: 0, data: { accepted: [], rejected: [{ number: "999001234567", error: { code: -18019903, message: "Carrier cannot be detected." } }] } },
+      { code: 0, data: { accepted: [], rejected: [] } },
+    );
+    const steps = await runDemo17(TrackingStore.open(":memory:"), liveClient("tok", fetcher), fixtures, ["mercadolibre.txt"]);
+    const s = steps[0]!;
+    expect(s.registered?.accepted).toBe(false);
+    expect(s.status).toBeDefined();
+    expect(s.note).toContain("Carrier cannot be detected");
+  });
+});

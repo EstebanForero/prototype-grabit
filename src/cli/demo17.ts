@@ -21,6 +21,7 @@ export interface Demo17Step {
   status?: string;
   client?: string;
   alerts?: string[];
+  note?: string;
 }
 
 /** Correo -> pedido + guía -> register en 17TRACK -> gettrackinfo -> estados en la base. */
@@ -55,15 +56,21 @@ export async function runDemo17(store: TrackingStore, client: Track17Client, dir
     setNow?.("2026-11-03T18:00:00.000Z");
     const info = await client.getTrackInfo([item]);
     const accepted = info.data.accepted.find((a) => a.number === item.number);
-    if (!accepted) continue;
     step.events = [];
-    for (const obs of observationsFrom(accepted)) {
-      store.ingestObservation({ ...obs, source: "aggregator", raw: accepted });
-      step.events.push({ occurredAt: obs.occurredAt, code: obs.code, text: obs.text, city: obs.city, country: obs.country });
+    if (accepted) {
+      for (const obs of observationsFrom(accepted)) {
+        store.ingestObservation({ ...obs, source: "aggregator", raw: accepted });
+        step.events.push({ occurredAt: obs.occurredAt, code: obs.code, text: obs.text, city: obs.city, country: obs.country });
+      }
+    }
+    if (step.events.length === 0) {
+      step.note = step.registered.accepted
+        ? "sin eventos de 17TRACK todavía; se mantiene el estado actual del pedido"
+        : `17TRACK rechazó la guía (${step.registered.error ?? "sin motivo"}); se mantiene el estado actual del pedido`;
     }
     const row = store.listTracking().find((r) => r.productId === product.id);
-    step.status = row?.statusLabel;
-    step.client = row?.clientLabel;
+    step.status = row?.statusLabel ?? "Comprado";
+    step.client = row?.clientLabel ?? "Comprado";
     step.alerts = row?.alerts.map((a) => a.message) ?? [];
   }
   return steps;
@@ -90,6 +97,7 @@ export async function runDemo17Cli(): Promise<void> {
     console.log(`  POST /gettrackinfo: ${s.events?.length ?? 0} eventos`);
     for (const e of s.events ?? []) console.log(`    ${e.occurredAt}  ${e.code.padEnd(13)} ${e.text}${e.city ? ` — ${e.city}` : ""}`);
     console.log(`  Estado: ${s.status}. El cliente ve: ${s.client}.`);
+    if (s.note) console.log(`  Nota: ${s.note}.`);
     if (s.alerts?.length) console.log(`  Alertas: ${s.alerts.join(" | ")}`);
   }
   store.close();
