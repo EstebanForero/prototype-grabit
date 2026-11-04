@@ -4,11 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
+import { stageIndex, CLIENT_STAGES } from "@/lib/stages";
 import type { Dossier, TrackingRow } from "@/lib/types";
+import { ProductSheet } from "@/views/ProductSheet";
 
 export function Board({ active }: { active: boolean }) {
   const [rows, setRows] = useState<TrackingRow[]>([]);
   const [error, setError] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dossier, setDossier] = useState<Dossier | null>(null);
   const [guide, setGuide] = useState("");
   const [trackNote, setTrackNote] = useState("");
@@ -65,52 +68,39 @@ export function Board({ active }: { active: boolean }) {
         <Card>
           <CardContent>
             <p className="font-medium">Todavía no hay productos.</p>
-            <p className="text-sm text-muted-foreground">Registre la compra. La guía entra cuando el correo de despacho llega al buzón.</p>
+            <p className="text-sm text-muted-foreground">Registre la compra. La guía entra cuando el correo de despacho llega al email.</p>
           </CardContent>
         </Card>
       )}
-      {rows.map((row) => (
-        <Card key={row.productId}>
-          <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-semibold">{row.productId}</p>
-              <p className="text-sm text-muted-foreground">{row.statusLabel} · día {row.daysInStatus}</p>
-              {row.trackingNumber && <p className="text-sm">Guía {row.trackingNumber} · {row.carrier || "transportadora sin nombre"}</p>}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {row.held ? <Badge variant="hold">retenido</Badge> : <Badge variant="secondary">{row.clientLabel}</Badge>}
-              {row.alerts.map((alert) => <Badge key={alert.kind} variant="alert">{alertLabel(alert.kind)}</Badge>)}
-              {!row.alerts.length && <span className="text-sm text-muted-foreground">{row.holdReason || "Sin alertas"}</span>}
-            </div>
-            <Button type="button" variant="outline" size="sm" onClick={() => void openDossier(row.productId, setDossier, setError)}>Ficha</Button>
-          </CardContent>
-        </Card>
-      ))}
-      {dossier && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{dossier.product.id}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <p className="text-sm">Estado interno: {dossier.product.status}. El cliente ve <strong>{dossier.clientLabel}</strong>.</p>
-            {dossier.shipments.map((shipment) => (
-              <div key={shipment.id} className="border-l-2 border-accent pl-3">
-                <p className="font-medium">{shipment.trackingNumber || shipment.contactName || shipment.id}{shipment.trackingNumber && <span className="font-normal text-muted-foreground"> · {shipment.carrier || "transportadora sin nombre"}</span>}</p>
-                <p className="text-sm text-muted-foreground">{shipment.destination} · {shipment.mode} · {shipment.recordStatus} · entró por {shipment.intake}</p>
+      {rows.map((row) => {
+        const open = selectedId === row.productId;
+        const step = stageIndex(row.status);
+        return (
+          <Card key={row.productId} className={open ? "ring-2 ring-ring" : undefined}>
+            <CardContent className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <button type="button" className="min-w-0 flex-1 text-left" onClick={() => void toggleProduct(row.productId, selectedId, setSelectedId, setDossier, setError)}>
+                  <p className="font-semibold">{row.trackingNumber || row.clientLabel}</p>
+                  <p className="text-sm text-muted-foreground">{row.clientLabel} · día {row.daysInStatus}{row.productId !== row.trackingNumber ? ` · ${row.productId}` : ""}</p>
+                  {row.trackingNumber && <p className="text-sm">{row.carrier || "transportadora sin nombre"}</p>}
+                  <span className="mt-2 flex gap-1" aria-label={CLIENT_STAGES[step]?.label ?? row.clientLabel}>
+                    {CLIENT_STAGES.map((stage, index) => (
+                      <span key={stage.id} className={index <= step ? "h-1.5 flex-1 rounded-full bg-navy" : "h-1.5 flex-1 rounded-full bg-muted"} />
+                    ))}
+                  </span>
+                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {row.held ? <Badge variant="hold">retenido</Badge> : <Badge variant="secondary">{row.clientLabel}</Badge>}
+                  {row.alerts.map((alert) => <Badge key={alert.kind} variant="alert">{alertLabel(alert.kind)}</Badge>)}
+                  {!row.alerts.length && <span className="text-sm text-muted-foreground">{row.holdReason || "Sin alertas"}</span>}
+                  <Button type="button" variant="outline" size="sm" onClick={() => void removeProduct(row, setSelectedId, setDossier, setError, load)}>Quitar</Button>
+                </div>
               </div>
-            ))}
-            {!dossier.shipments.length && <p className="text-sm text-muted-foreground">Sin envíos.</p>}
-            <h3 className="font-semibold">Decisiones</h3>
-            {dossier.decisions.map((decision, index) => (
-              <div key={`${decision.outcome}-${index}`} className="border-l-2 border-border pl-3">
-                <p className="font-medium">{decision.outcome} {decision.status}</p>
-                <p className="text-sm text-muted-foreground">{decision.reason}</p>
-              </div>
-            ))}
-            {!dossier.decisions.length && <p className="text-sm text-muted-foreground">Todavía no hay una decisión.</p>}
-          </CardContent>
-        </Card>
-      )}
+              {open && dossier?.product.id === row.productId && <ProductSheet dossier={dossier} />}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
@@ -167,10 +157,43 @@ async function consultGuide(number: string, setNote: (message: string) => void, 
   }
 }
 
-async function openDossier(id: string, setDossier: (dossier: Dossier) => void, setError: (message: string) => void) {
+async function toggleProduct(
+  id: string,
+  selectedId: string | null,
+  setSelectedId: (id: string | null) => void,
+  setDossier: (dossier: Dossier | null) => void,
+  setError: (message: string) => void,
+) {
+  if (selectedId === id) {
+    setSelectedId(null);
+    setDossier(null);
+    return;
+  }
   try {
     setDossier(await api<Dossier>(`/api/productos/${encodeURIComponent(id)}`));
+    setSelectedId(id);
+    setError("");
   } catch (cause) {
-    setError(cause instanceof Error ? cause.message : "No se pudo abrir la ficha.");
+    setError(cause instanceof Error ? cause.message : "No se pudo abrir el producto.");
+  }
+}
+
+async function removeProduct(
+  row: TrackingRow,
+  setSelectedId: (id: string | null) => void,
+  setDossier: (dossier: Dossier | null) => void,
+  setError: (message: string) => void,
+  reload: () => Promise<void>,
+) {
+  const name = row.trackingNumber || row.productId;
+  if (!window.confirm(`Quitar ${name}? El pedido se puede registrar otra vez y el correo volverá a crear la guía.`)) return;
+  try {
+    await api(`/api/productos/${encodeURIComponent(row.productId)}`, { method: "DELETE" });
+    setSelectedId(null);
+    setDossier(null);
+    setError("");
+    await reload();
+  } catch (cause) {
+    setError(cause instanceof Error ? cause.message : "No se pudo quitar el producto.");
   }
 }

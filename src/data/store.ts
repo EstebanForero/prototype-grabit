@@ -27,7 +27,7 @@ import { nextCheckAt, questionsDue, type ContactAnswer } from "../core/contact.t
 import { decideManually, evaluate } from "../core/decision.ts";
 import { eventsFromAlerts, eventsFromDecision } from "../core/events.ts";
 import { looksLikeTracking } from "../core/normalize.ts";
-import { parseDispatchEmail } from "../providers/email.ts";
+import { emailUpdate, parseDispatchEmail } from "../providers/email.ts";
 
 interface ProductRow {
   id: string;
@@ -237,6 +237,26 @@ export class TrackingStore {
     return { voidedId: current.id, replacementId: replacement.shipmentId };
   }
 
+  /** Quita el producto y las guías que solo eran suyas, para poder registrar el pedido otra vez. */
+  deleteProduct(productId: string): void {
+    this.mustProduct(productId);
+    const shipmentIds = this.shipmentsOf(productId).map((item) => item.id);
+    const write = this.db.transaction(() => {
+      this.db.query("DELETE FROM shipment_products WHERE product_id = ?").run(productId);
+      this.db.query("DELETE FROM decisions WHERE product_id = ?").run(productId);
+      this.db.query("DELETE FROM module_events WHERE product_id = ?").run(productId);
+      this.db.query("DELETE FROM products WHERE id = ?").run(productId);
+      for (const shipmentId of shipmentIds) {
+        const stillShared = this.db.query("SELECT 1 AS ok FROM shipment_products WHERE shipment_id = ? LIMIT 1").get(shipmentId);
+        if (stillShared) continue;
+        this.db.query("DELETE FROM observations WHERE shipment_id = ?").run(shipmentId);
+        this.db.query("DELETE FROM notes WHERE shipment_id = ?").run(shipmentId);
+        this.db.query("DELETE FROM shipments WHERE id = ?").run(shipmentId);
+      }
+    });
+    write();
+  }
+
   nameCarrier(trackingNumber: string, carrier: string): void {
     this.db
       .query("UPDATE shipments SET carrier = ? WHERE tracking_number = ? AND (carrier IS NULL OR carrier = '')")
@@ -398,7 +418,7 @@ export class TrackingStore {
     return { duplicate: false, decisions, events };
   }
 
-  ingestEmail(raw: string): { parsed: ReturnType<typeof parseDispatchEmail>; shipmentId?: string; linkedExisting?: boolean } {
+  ingestEmail(raw: string): { parsed: ReturnType<typeof parseDispatchEmail>; shipmentId?: string; linkedExisting?: boolean; updated?: boolean } {
     const parsed = parseDispatchEmail(raw);
     if ("error" in parsed) return { parsed };
     const row = this.db
@@ -407,6 +427,7 @@ export class TrackingStore {
       )
       .get(parsed.store, parsed.storeOrderNumber) as { id: string } | null;
     if (!row) return { parsed };
+    const update = emailUpdate(raw);
     const created = this.registerShipment({
       productIds: [row.id],
       trackingNumber: parsed.trackingNumber,
@@ -414,19 +435,41 @@ export class TrackingStore {
       intake: "email",
       registeredBy: "lector-correo",
     });
+    const occurredAt = this.clock();
     if (!created.linkedExisting) {
-      // El correo de despacho es la tienda diciendo que el paquete salió: eso es un "picked_up".
       const shipment = this.shipmentById(created.shipmentId);
       this.ingestObservation({
         shipmentId: created.shipmentId,
         source: "email",
-        occurredAt: shipment?.registeredAt ?? this.clock(),
+        occurredAt: shipment?.registeredAt ?? occurredAt,
         code: "picked_up",
         text: `La tienda avisó por correo que despachó con ${parsed.carrier ?? "la transportadora"}, guía ${parsed.trackingNumber}.`,
         raw: { store: parsed.store, order: parsed.storeOrderNumber },
       });
     }
-    return { parsed, shipmentId: created.shipmentId, linkedExisting: created.linkedExisting };
+    let updated = false;
+    if (update.code !== "picked_up") {
+      const already = this.db
+        .query("SELECT id FROM observations WHERE shipment_id = ? AND source = 'email' AND code = ? LIMIT 1")
+        .get(created.shipmentId, update.code) as { id: string } | null;
+      if (!already) {
+        const where = [update.city, update.country].filter(Boolean).join(", ");
+        this.ingestObservation({
+          shipmentId: created.shipmentId,
+          source: "email",
+          occurredAt,
+          code: update.code,
+          text: update.code === "delivered"
+            ? `La tienda avisó por correo que entregó${where ? ` en ${where}` : ""}.`
+            : `La tienda avisó por correo que el paquete va hacia el cliente${where ? ` (${where})` : ""}.`,
+          city: update.city,
+          country: update.country,
+          raw: { store: parsed.store, order: parsed.storeOrderNumber, movement: update.code },
+        });
+        updated = true;
+      }
+    }
+    return { parsed, shipmentId: created.shipmentId, linkedExisting: created.linkedExisting, updated };
   }
 
   listTracking(): TrackingRow[] {

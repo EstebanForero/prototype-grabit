@@ -15,7 +15,7 @@ export interface MailboxConfig {
 export interface ScanItem {
   subject: string;
   from: string;
-  outcome: "creado" | "ya-estaba" | "sin-producto" | "ignorado";
+  outcome: "creado" | "ya-estaba" | "actualizado" | "sin-producto" | "ignorado";
   detail: string;
   parsed?: ParsedDispatch;
 }
@@ -93,14 +93,17 @@ export function applyMessage(store: TrackingStore, raw: string, subject = "", fr
   if ("error" in parsed) return { subject: subjectLine, from: fromLine, outcome: "ignorado", detail: parsed.error };
   const ingested = store.ingestEmail(text);
   if (ingested.shipmentId) {
-    const already = ingested.linkedExisting === true;
+    const updated = ingested.updated === true;
+    const already = ingested.linkedExisting === true && !updated;
     return {
       subject: subjectLine,
       from: fromLine,
-      outcome: already ? "ya-estaba" : "creado",
-      detail: already
-        ? `La guía ${parsed.trackingNumber} ya estaba registrada. No se crea otra.`
-        : `Guía ${parsed.trackingNumber} asociada al pedido ${parsed.storeOrderNumber}.`,
+      outcome: updated ? "actualizado" : already ? "ya-estaba" : "creado",
+      detail: updated
+        ? `La guía ${parsed.trackingNumber} actualizó el estado del pedido ${parsed.storeOrderNumber}.`
+        : already
+          ? `La guía ${parsed.trackingNumber} ya estaba registrada. No se crea otra.`
+          : `Guía ${parsed.trackingNumber} asociada al pedido ${parsed.storeOrderNumber}.`,
       parsed,
     };
   }

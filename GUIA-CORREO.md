@@ -2,7 +2,7 @@
 
 Hay dos demostraciones distintas. El correo muestra que Grab It lee un aviso y lo cruza con una compra. 17TRACK muestra el recorrido de una guía que existe en esa cuenta. Una no dispara la otra.
 
-## 1. Correo
+## 1. Correo, en dos pasos
 
 El servidor tiene que estar corriendo desde `prototype`:
 
@@ -10,45 +10,61 @@ El servidor tiene que estar corriendo desde `prototype`:
 bun run start
 ```
 
-Abre http://127.0.0.1:8787. La cuenta de Gmail ya está en `.env` (`MAIL_USER` y `MAIL_PASSWORD`, con la contraseña de aplicación). El servidor lee esa bandeja al arrancar y otra vez cada 45 segundos.
+Si esa ventana ya estaba abierta desde antes de este cambio, ciérrala y vuelve a ejecutar el comando. Los botones nuevos viven en ese proceso.
 
-### Producto que hay que registrar
+Abre http://127.0.0.1:8787. La cuenta de Gmail ya está en `.env` (`MAIL_USER` y `MAIL_PASSWORD`, con la contraseña de aplicación). El envío usa `SMTP_USER` y `SMTP_PASSWORD`, la misma contraseña de aplicación. El servidor lee la bandeja al arrancar y otra vez cada 45 segundos. Cada botón también pide una lectura unos 8 segundos después.
 
-En **Registrar compra**, antes de que llegue el correo:
+La guía de este recorrido es `1Z999AA10987654321`. No uses `1Z999AA10123456784`: esa ya está en la cuenta de 17TRACK, entregada en Longview, y se mezclaría con el correo.
+
+### Producto
+
+En **Registrar compra**, antes del primer correo. El modo tiene que ser nacional: el envío va al cliente, y así el segundo correo puede dejarlo en Entregado.
 
 | Campo | Valor |
 | --- | --- |
 | Identificador | `audifonos` |
-| Modo | Internacional, primer tramo a bodega |
+| Modo | Nacional, directo al cliente |
 | País del cliente | `CO` |
 | Ciudad | `Bogotá` |
 | Tienda | Amazon |
 | Número de pedido de la tienda | `112-4455667-1234567` |
 
-Si el pedido del correo no coincide con este número, la lectura dice que hay guía pero ningún producto.
+Si `audifonos` ya está en la cola, pulsa **Quitar** en esa tarjeta y regístralo otra vez. Si el pedido del correo no coincide, la lectura dice que hay guía pero ningún producto.
 
-### Correo de muestra
+Abre **Cola de hoy**. La tarjeta está en **Comprado**.
 
-Este es el aviso. El botón **Enviar aviso**, en **Buzón**, manda exactamente este texto a la misma cuenta, por SMTP. Para eso hacen falta `SMTP_USER` y `SMTP_PASSWORD` en `.env`, con la misma contraseña de aplicación.
+### Primer correo: despacho
+
+En la pestaña **Buzón**, pulsa **Enviar despacho**. Sale este texto:
 
 ```text
-From: shipment-tracking@amazon.com
-Subject: Your package was shipped
-
 Your Amazon.com order has shipped.
 
 Order #112-4455667-1234567
 Carrier: UPS
-Tracking ID: 1Z999AA10123456784
+Tracking ID: 1Z999AA10987654321
 ```
 
-También sirve reenviar un aviso real de la tienda a esa bandeja. La tienda y el número de pedido del mensaje tienen que ser los del producto.
+Vuelve a **Cola de hoy**. En menos de un minuto la tarjeta pasa a **Enviado** y la barra llena hasta esa etapa. Ábrela: el correo dijo que la transportadora recogió el envío que va al cliente. En **Buzón**, la extracción dice que la guía quedó asociada.
 
-### Qué se ve
+### Segundo correo: entrega
 
-En menos de 45 segundos, **Buzón** muestra una extracción con la guía `1Z999AA10123456784` asociada al pedido. **Cola de hoy** muestra el producto `audifonos` con esa guía. No hace falta pulsar **Vigilar buzón**.
+Con la tarjeta todavía en **Enviado**, vuelve a **Buzón** y pulsa **Enviar entrega**:
 
-Esa guía es de ejemplo. 17TRACK no la conoce. El correo queda demostrado. El recorrido de la transportadora, no.
+```text
+Your Amazon.com order has been delivered.
+
+Order #112-4455667-1234567
+Carrier: UPS
+Tracking ID: 1Z999AA10987654321
+Delivered in Bogotá, CO
+```
+
+**Cola de hoy** pasa a **Entregado**. La barra llega al final. Al abrir la tarjeta, la etapa dice que la entrega fue en Bogotá. En **Buzón**, esa lectura queda como estado nuevo.
+
+Si se pulsa **Enviar entrega** otra vez, el correo se lee y no cambia el estado: la entrega ya estaba anotada.
+
+No pulses **Traer registradas** en medio de estos dos correos. Ese botón baja las guías de 17TRACK, y esta demostración es solo el email.
 
 ## 2. 17TRACK
 

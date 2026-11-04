@@ -3,7 +3,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { TrackingStore } from "../src/data/store.ts";
-import { parseDispatchEmail } from "../src/providers/email.ts";
+import { DEMO_MESSAGES, parseDispatchEmail } from "../src/providers/email.ts";
 import { applyMessage } from "../src/providers/mailbox.ts";
 import { messageText } from "../src/providers/mime.ts";
 
@@ -123,6 +123,32 @@ Código de seguimiento: 240012345678
       trackingNumber: "240012345678",
       carrier: "Interrapidisimo",
     });
+  });
+});
+
+describe("dos correos, dos estados", () => {
+  test("el despacho deja Enviado y la entrega deja Entregado", () => {
+    let now = "2026-10-04T12:00:00.000Z";
+    const dir = mkdtempSync(join(tmpdir(), "grabit-dos-"));
+    const store = TrackingStore.open(join(dir, "db.sqlite"), { now: () => now });
+    store.registerProduct({
+      id: "audifonos",
+      mode: "national",
+      customerCountry: "CO",
+      customerCity: "Bogotá",
+      store: "amazon",
+      storeOrderNumber: "112-4455667-1234567",
+    });
+    const aviso = `From: shipment-tracking@amazon.com\nSubject: ${DEMO_MESSAGES.aviso.subject}\n\n${DEMO_MESSAGES.aviso.lines.join("\n")}\n`;
+    const entrega = `From: shipment-tracking@amazon.com\nSubject: ${DEMO_MESSAGES.entrega.subject}\n\n${DEMO_MESSAGES.entrega.lines.join("\n")}\n`;
+    expect(applyMessage(store, aviso).outcome).toBe("creado");
+    expect(store.listTracking()[0]?.clientLabel).toBe("Enviado");
+    now = "2026-10-04T15:00:00.000Z";
+    expect(applyMessage(store, entrega).outcome).toBe("actualizado");
+    expect(store.listTracking()[0]?.status).toBe("delivered");
+    expect(store.listTracking()[0]?.clientLabel).toBe("Entregado");
+    expect(applyMessage(store, entrega).outcome).toBe("ya-estaba");
+    store.close();
   });
 });
 

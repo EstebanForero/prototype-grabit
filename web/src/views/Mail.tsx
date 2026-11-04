@@ -32,6 +32,7 @@ const PRESETS: Record<string, Pick<FormState, "host" | "port" | "secure">> = {
 const outcomeLabel: Record<Outcome, string> = {
   creado: "asociada",
   "ya-estaba": "Ya estaba",
+  actualizado: "estado nuevo",
   "sin-producto": "sin producto",
   ignorado: "no es despacho",
 };
@@ -177,12 +178,15 @@ export function Mail({ onLinked }: { onLinked: () => void }) {
     }
   }
 
-  async function sendNotice() {
+  async function sendNotice(step: "aviso" | "entrega") {
     setBusy(true);
-    setStatus("Entregando el aviso por el SMTP del proveedor…");
+    setStatus(step === "entrega" ? "Entregando el aviso de entrega…" : "Entregando el aviso de despacho…");
     try {
       await ensureSaved();
-      const sent = await api<{ to: string; host: string; port: number }>("/api/correo/enviar", { method: "POST" });
+      const sent = await api<{ to: string; host: string; port: number }>("/api/correo/enviar", {
+        method: "POST",
+        body: JSON.stringify({ step }),
+      });
       if (!watching) {
         const view = await api<MailPublic>("/api/correo/vigilar", {
           method: "POST",
@@ -240,7 +244,7 @@ export function Mail({ onLinked }: { onLinked: () => void }) {
           <CardDescription>Con IMAP real o, sin cuenta externa, con los correos de ejemplo de fixtures/.</CardDescription>        </CardHeader>
         <CardContent className="flex flex-col gap-3 text-sm">
           <p>La sustentación usa una cuenta personal gratuita, vacía, creada solo para esto. No es Gmail Workspace ni el buzón de Grab It. En Gmail se activa la verificación en dos pasos y se crea una contraseña de aplicación. La clave normal de la cuenta no sirve. Yahoo pide lo mismo. GMX usa su clave normal después de activar IMAP en el webmail.</p>
-          <p>El aviso de Amazon, con el pedido 112-4455667-1234567 y la guía 1Z999AA10123456784, sale desde aquí con «Enviar aviso». El proveedor lo guarda en su bandeja y la extracción lo lee por IMAP. La lista de abajo separa la lectura que está en curso de las que ya terminaron. Recargar la página no borra ese historial.</p>
+          <p>Hay dos avisos, en este orden. «Enviar despacho» manda la salida del pedido 112-4455667-1234567, guía 1Z999AA10987654321. Cuando Cola de hoy diga Enviado, «Enviar entrega» manda la entrega en Bogotá. El producto tiene que ser nacional, con ciudad Bogotá. Cola de hoy pasa a Entregado.</p>
           <Button type="button" variant="outline" className="self-start" onClick={() => void loadSamples()} disabled={busy}>Cargar correos de ejemplo</Button>          <Separator />
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => patch(PRESETS.gmail)}>Gmail</Button>
@@ -266,7 +270,8 @@ export function Mail({ onLinked }: { onLinked: () => void }) {
               <Button type="submit" variant="outline" disabled={busy}>Guardar y probar</Button>
               <Button type="button" onClick={() => void toggleWatch()} disabled={busy}>{watching ? "Detener vigilancia" : "Vigilar buzón"}</Button>
               <Button type="button" variant="secondary" onClick={() => void scan()} disabled={busy}>Leer ahora</Button>
-              <Button type="button" onClick={() => void sendNotice()} disabled={busy}>Enviar aviso</Button>
+              <Button type="button" onClick={() => void sendNotice("aviso")} disabled={busy}>Enviar despacho</Button>
+              <Button type="button" onClick={() => void sendNotice("entrega")} disabled={busy}>Enviar entrega</Button>
             </div>
             {status && <p className="text-sm text-muted-foreground sm:col-span-2">{status}</p>}
           </form>
@@ -290,8 +295,8 @@ export function Mail({ onLinked }: { onLinked: () => void }) {
       ))}
       {(() => {
         const indexed = samples.map((item, index) => ({ item, index }));
-        const matched = indexed.filter(({ item }) => item.outcome === "creado" || item.outcome === "ya-estaba");
-        const others = indexed.filter(({ item }) => item.outcome !== "creado" && item.outcome !== "ya-estaba");
+        const matched = indexed.filter(({ item }) => item.outcome === "creado" || item.outcome === "ya-estaba" || item.outcome === "actualizado");
+        const others = indexed.filter(({ item }) => item.outcome !== "creado" && item.outcome !== "ya-estaba" && item.outcome !== "actualizado");
         return (
           <>
             {matched.map(({ item, index }) => (
@@ -379,15 +384,17 @@ function ArrivalCard({ item, onLinked, onStatus }: { item: Arrival; onLinked: ()
     : item.detail;
   const product = item.outcome === "creado"
     ? "El pedido ya estaba. La guía entra al producto."
-    : item.outcome === "ya-estaba"
-      ? "Esa guía ya estaba registrada. No se duplica."
-      : item.outcome === "sin-producto"
-        ? "Ningún producto tiene ese pedido."
-        : "No se crea un envío.";
+    : item.outcome === "actualizado"
+      ? "Ese correo cambia el estado. Se ve en Cola de hoy."
+      : item.outcome === "ya-estaba"
+        ? "Esa guía ya estaba registrada. No se duplica."
+        : item.outcome === "sin-producto"
+          ? "Ningún producto tiene ese pedido."
+          : "No se crea un envío.";
   const tones = [
     item.from ? "border-ok/40 bg-ok/5" : "border-hold/40",
     item.parsed ? "border-ok/40 bg-ok/5" : "border-alert/40",
-    item.outcome === "creado" || item.outcome === "ya-estaba" ? "border-ok/40 bg-ok/5" : item.outcome === "sin-producto" ? "border-hold/40" : "border-alert/40",
+    item.outcome === "creado" || item.outcome === "ya-estaba" || item.outcome === "actualizado" ? "border-ok/40 bg-ok/5" : item.outcome === "sin-producto" ? "border-hold/40" : "border-alert/40",
   ];
   const steps = [
     ["1. Llegó", item.from || "sin remitente"],

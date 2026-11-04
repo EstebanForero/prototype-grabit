@@ -30,6 +30,45 @@ function originalSender(raw: string): string {
   return forwarded?.[1]?.trim() || headerFrom;
 }
 
+/** Los dos correos del recorrido. La guía no es la de 17TRACK: esa ya está entregada en otra ciudad. */
+export const DEMO_MESSAGES = {
+  aviso: {
+    subject: "Your package was shipped",
+    lines: [
+      "Your Amazon.com order has shipped.",
+      "",
+      "Order #112-4455667-1234567",
+      "Carrier: UPS",
+      "Tracking ID: 1Z999AA10987654321",
+    ],
+  },
+  entrega: {
+    subject: "Your package was delivered",
+    lines: [
+      "Your Amazon.com order has been delivered.",
+      "",
+      "Order #112-4455667-1234567",
+      "Carrier: UPS",
+      "Tracking ID: 1Z999AA10987654321",
+      "Delivered in Bogotá, CO",
+    ],
+  },
+} as const;
+
+export type DemoStep = keyof typeof DEMO_MESSAGES;
+
+export function emailUpdate(raw: string): { code: "picked_up" | "in_transit" | "delivered"; city?: string; country?: string } {
+  const text = bodyOf(raw);
+  const delivered = /\b(?:delivered|entregad[oa])\b/i.test(text);
+  const transit = /\b(?:out for delivery|in transit|en reparto|en tr[aá]nsito)\b/i.test(text);
+  const place = text.match(/(?:delivered in|entregado en)\s+([^,\n]+),\s*([A-Za-zÁÉÍÓÚáéíóúñÑ]{2,})/i);
+  return {
+    code: delivered ? "delivered" : transit ? "in_transit" : "picked_up",
+    city: place?.[1]?.trim(),
+    country: place?.[2]?.trim(),
+  };
+}
+
 export function parseDispatchEmail(raw: string): ParsedDispatch | { error: string } {
   const text = bodyOf(raw);
   // El remitente original manda: un correo de Mercado Libre puede mencionar Amazon en la publicidad.

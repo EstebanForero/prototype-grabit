@@ -1,4 +1,4 @@
-export type Outcome = "creado" | "ya-estaba" | "sin-producto" | "ignorado";
+export type Outcome = "creado" | "ya-estaba" | "actualizado" | "sin-producto" | "ignorado";
 
 export type ParsedDispatch = {
   store: string;
@@ -62,8 +62,10 @@ export type TrackingRow = {
 };
 
 export type Dossier = {
-  product: { id: string; status: string };
+  product: { id: string; status: string; mode?: string; customerCountry?: string; customerCity?: string };
   clientLabel: string;
   shipments: Array<{ id: string; trackingNumber?: string; carrier?: string; contactName?: string; destination: string; mode: string; recordStatus: string; intake: string }>;
+  observations: Array<{ id: string; occurredAt: string; code: string; text: string; city?: string; country?: string }>;
   decisions: Array<{ outcome: string; status: string; reason: string }>;
+  alerts?: Array<{ kind: string; message: string }>;
 };

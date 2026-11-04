@@ -188,6 +188,10 @@ if (import.meta.main) {
         if (request.method === "GET" && (url.pathname === "/seguimiento" || url.pathname === "/api/seguimiento")) {
           return Response.json(store.listTracking());
         }
+        if (request.method === "DELETE" && url.pathname.startsWith("/api/productos/")) {
+          store.deleteProduct(decodeURIComponent(url.pathname.slice("/api/productos/".length)));
+          return Response.json({ ok: true });
+        }
         if (request.method === "GET" && url.pathname.startsWith("/api/productos/")) {
           return Response.json(store.dossier(decodeURIComponent(url.pathname.slice("/api/productos/".length))));
         }
@@ -251,7 +255,9 @@ if (import.meta.main) {
         }
         if (request.method === "POST" && url.pathname === "/api/correo/enviar") {
           if (!mailbox) return Response.json({ error: "Todavía no hay un buzón configurado." }, { status: 400 });
-          const sent = await sendDispatch({ user: mailbox.user, password: mailbox.password, imapHost: mailbox.host });
+          const body = await readJson(request).catch(() => ({}));
+          const step = text(body.step) === "entrega" ? "entrega" : "aviso";
+          const sent = await sendDispatch({ user: mailbox.user, password: mailbox.password, imapHost: mailbox.host, step });
           const since = watchSinceDays;
           setTimeout(() => void runExtraction(store, since), 8_000);
           return Response.json({ ok: true, to: sent.to, host: sent.host, port: sent.port });

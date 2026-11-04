@@ -20,7 +20,8 @@ if (!user || !password) {
 }
 
 try {
-  const sent = await sendDispatch({ user, password, to: process.env.SMTP_TO || user, imapHost: saved.host });
+  const step = process.argv.includes("entrega") ? "entrega" : "aviso";
+  const sent = await sendDispatch({ user, password, to: process.env.SMTP_TO || user, imapHost: saved.host, step });
   console.log(`Aviso entregado por SMTP a ${sent.to} en ${sent.host}:${sent.port}. La pantalla lo lee por IMAP.`);
 } catch (error) {
   console.error(error instanceof Error ? error.message : "No se pudo entregar el aviso.");

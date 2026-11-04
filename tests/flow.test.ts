@@ -98,6 +98,17 @@ describe("flujo persistido", () => {
     expect(dossier.shipments[0]?.trackingNumber).toBe("1Z999AA10123456784");
     expect(dossier.shipments[0]?.intake).toBe("email");
     expect(dossier.shipments[0]?.destination).toBe("warehouse");
+    store.deleteProduct(product.id);
+    const again = store.registerProduct({
+      id: product.id,
+      mode: "international",
+      customerCountry: "CO",
+      store: "amazon",
+      storeOrderNumber: "112-4455667-1234567",
+    });
+    const second = store.ingestEmail(raw);
+    expect(second.linkedExisting).toBe(false);
+    expect(store.dossier(again.id).shipments[0]?.trackingNumber).toBe("1Z999AA10123456784");
     store.close();
   });
 

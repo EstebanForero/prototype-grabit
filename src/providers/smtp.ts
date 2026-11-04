@@ -1,5 +1,6 @@
 import net from "node:net";
 import tls from "node:tls";
+import { DEMO_MESSAGES, type DemoStep } from "./email.ts";
 
 export function smtpTarget(imapHost: string | undefined): { host: string; port: number } {
   if (process.env.SMTP_HOST) return { host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT ?? 587) };
@@ -8,10 +9,12 @@ export function smtpTarget(imapHost: string | undefined): { host: string; port: 
   return { host: "smtp.gmail.com", port: 587 };
 }
 
-export async function sendDispatch(input: { user: string; password: string; to?: string; imapHost?: string }): Promise<{ to: string; host: string; port: number }> {
+export async function sendDispatch(input: { user: string; password: string; to?: string; imapHost?: string; step?: DemoStep }): Promise<{ to: string; host: string; port: number; step: DemoStep }> {
   const user = input.user;
   const password = input.password;
   const to = input.to || user;
+  const step = input.step ?? "aviso";
+  const notice = DEMO_MESSAGES[step];
   const { host, port } = smtpTarget(input.imapHost);
   const hidden = (text: string) => {
     const encoded = Buffer.from(password, "utf8").toString("base64");
@@ -20,16 +23,12 @@ export async function sendDispatch(input: { user: string; password: string; to?:
   const message = [
     `From: ${user}`,
     `To: ${to}`,
-    "Subject: Your package was shipped",
+    `Subject: ${notice.subject}`,
     `Date: ${new Date().toUTCString()}`,
     "MIME-Version: 1.0",
     "Content-Type: text/plain; charset=utf-8",
     "",
-    "Your Amazon.com order has shipped.",
-    "",
-    "Order #112-4455667-1234567",
-    "Carrier: UPS",
-    "Tracking ID: 1Z999AA10123456784",
+    ...notice.lines,
     "",
   ].join("\r\n");
 
@@ -119,7 +118,7 @@ export async function sendDispatch(input: { user: string; password: string; to?:
     await reply("250");
     send("QUIT");
     await reply("221");
-    return { to, host, port };
+    return { to, host, port, step };
   } catch (error) {
     const text = error instanceof Error ? error.message : "No se pudo entregar el aviso.";
     throw new Error(hidden(text));
