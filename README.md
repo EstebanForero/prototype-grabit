@@ -20,6 +20,8 @@ La solución está terminada y funcionando dentro del alcance aceptado con Grab 
 | [Informe académico en Typst](https://typst.app/project/pQ1sG2QUVmHVALKeXiJzrB) | Documento consolidado: proceso, impacto, finanzas, riesgos y anexos |
 | [IA para mantenimiento del parser](harness/INFORME.md) | Agente de programación, verificación, evidencia y límites |
 
+La presentación vigente consta de 12 diapositivas en Canva e incorpora la IA y las 43 pruebas. [docs/presentacion-final.pdf](docs/presentacion-final.pdf) conserva la versión académica histórica de 14 diapositivas, con cifras y textos anteriores al cierre actual.
+
 La implementación usa Bun y SQLite; MySQL es un esquema de referencia. La documentación técnica distingue la operación real, las pruebas con respuestas grabadas y los procedimientos de mantenimiento.
 
 ## Lectura flexible de estados con IA

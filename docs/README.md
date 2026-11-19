@@ -38,4 +38,4 @@ Los manuales incluyen capturas reales de la consola con datos sintéticos. El MV
 
 Los manuales también están disponibles en PDF en esta carpeta. El informe se entrega por separado en el paquete académico; estas páginas permiten consultar la documentación directamente desde GitHub y mantener sus actualizaciones en el historial.
 
-La presentación vigente es la de Canva enlazada arriba. `presentacion-final.pdf` se conserva como antecedente académico del repositorio; la propuesta actualizada de continuidad operativa es de COP 9.000.000.
+La presentación vigente es la de Canva enlazada arriba: 12 diapositivas con la lectura de IA y las 43 pruebas. [presentacion-final.pdf](presentacion-final.pdf) se conserva como versión académica histórica de 14 diapositivas; contiene cifras y textos anteriores al cierre actual. La propuesta actualizada de continuidad operativa es de COP 9.000.000.
