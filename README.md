@@ -2,17 +2,29 @@
 
 Módulo que convierte eventos de transportadora en una decisión de estado por producto. El estado se aplica solo cuando la evidencia alcanza; si no, se retiene y una persona entra únicamente en ese caso.
 
-El prototipo corre con Bun y SQLite. La consola es una aplicación React que se compila y el mismo proceso la sirve. El esquema de producción, para MySQL en los servidores de Grab It, está en `migrations/001_mysql.sql`. El proceso de este paquete no abre esa conexión.
+El prototipo corre con Bun y SQLite. La consola es una aplicación React que se compila y el mismo proceso la sirve. El esquema de referencia para una variante MySQL está en `migrations/001_mysql.sql`. La versión entregada y su contenedor ejecutan SQLite; el proceso de este paquete no abre una conexión MySQL.
 
 Los comandos de esta página se ejecutan en la raíz de este repositorio, la carpeta que contiene `package.json` y `web/`.
 
-## Documentación técnica
+## Documentación y entrega final
 
-La documentación técnica está en [docs/documentacion-tecnica.md](docs/documentacion-tecnica.md).
+La solución está terminada y funcionando dentro del alcance aceptado con Grab It. La integración real de 17TRACK está conectada; el modo de ejemplos se conserva para practicar y reproducir pruebas sin credenciales.
 
-El manual para Compras y operación, sin términos técnicos, está en [docs/manual-usuario.md](docs/manual-usuario.md).
+| Recurso | Para quién / contenido |
+| --- | --- |
+| [Centro de documentación](docs/README.md) | Acceso organizado a manuales, arquitectura, instalación y evidencia |
+| [Manual de usuario](docs/manual-usuario.md) | Compras y operación: pasos, capturas, tareas habituales y solución de errores |
+| [Documentación técnica](docs/documentacion-tecnica.md) | TI: arquitectura, dependencias, configuración, API, base de datos, pruebas y mantenimiento |
+| [Presentación de producto e inversión en Canva](https://canva.link/dl65bgwg23bmh6b) | Grab It, funcionamiento y propuesta de continuidad por COP 9.000.000 |
+| [Video narrado del MVP · 5:03](https://www.youtube.com/watch?v=Q6-VDQ_lRcY) | Solución funcionando y comprobaciones del comportamiento |
+| [Informe académico en Typst](https://typst.app/project/pQ1sG2QUVmHVALKeXiJzrB) | Documento consolidado: proceso, impacto, finanzas, riesgos y anexos |
+| [IA para mantenimiento del parser](harness/INFORME.md) | Agente de programación, verificación, evidencia y límites |
 
-Ese archivo es la guía para un tercero: arquitectura, componentes, consola, variables de entorno, Docker, unidad de systemd, ejecución, las 43 pruebas y el guion de la grabación. Este README deja el arranque, la consola y la configuración. El informe académico no está en este repositorio.
+La implementación usa Bun y SQLite; MySQL es un esquema de referencia. La documentación técnica distingue la operación real, las pruebas con respuestas grabadas y los procedimientos de mantenimiento.
+
+## Lectura flexible de estados con IA
+
+La integración opcional de xAI ayuda a interpretar textos de seguimiento desconocidos y avisos de correo cuya lectura por reglas es poco específica. Se configura en el servidor con `XAI_API_KEY` y `XAI_MODEL` (por defecto `grok-4.7`); `GRABIT_STATUS_MODEL=off` la desactiva. Las respuestas se validan contra el contrato, las reglas siguen siendo el respaldo y un despacho claro no se transforma en entrega solo por la respuesta del modelo. Consulte los datos enviados, la configuración y los límites en la [documentación técnica](docs/documentacion-tecnica.md#lectura-de-texto-con-ia-xai).
 
 ## Consola
 
@@ -44,7 +56,7 @@ cd web && bun run dev
 
 La imagen de Docker construye `web/` en una etapa propia y copia `public/` al proceso. En ese despliegue no hace falta compilar en el anfitrión.
 
-La cuenta de la sustentación es personal y gratuita: Gmail (`imap.gmail.com`, 993, TLS y contraseña de aplicación), Yahoo o GMX. No hace falta Gmail Workspace. «Vigilar buzón» hace que el servidor vuelva a leer IMAP cada 45 segundos. «Enviar aviso» entrega el pedido `112-4455667-1234567` y la guía `1Z999AA10123456784`, enciende la vigilancia si estaba apagada y lanza una lectura unos 8 segundos después. El pedido tiene que estar registrado antes. El historial de extracciones queda en la SQLite del prototipo, con las últimas 40, y sobrevive a recargar. Reiniciar el proceso apaga la vigilancia; las filas quedan.
+La cuenta de la sustentación es personal y gratuita: Gmail (`imap.gmail.com`, 993, TLS y contraseña de aplicación), Yahoo o GMX. No hace falta Gmail Workspace. «Vigilar buzón» hace que el servidor vuelva a leer IMAP cada 45 segundos. «Enviar aviso» entrega el pedido `112-4455667-1234567` y la guía `1Z999AA10987654321`, enciende la vigilancia si estaba apagada y lanza una lectura unos 8 segundos después. El pedido tiene que estar registrado antes. El historial de extracciones queda en la SQLite del prototipo, con las últimas 40, y sobrevive a recargar. Al reiniciar el proceso se vuelve a activar la vigilancia si existe una cuenta de buzón válida guardada; las filas del historial se conservan.
 
 ## Configurar
 

@@ -1,133 +1,148 @@
-# Manual de usuario: seguimiento de envíos
+# Manual de usuario
 
-Este manual es para el equipo de Compras y de operación de Grab It. No hace falta saber programar. Si el sistema no abre o hay que instalarlo, eso lo hace TI con la [documentación técnica](documentacion-tecnica.md).
+GRAB IT · Seguimiento de envíos · Compras y operación · 18 de noviembre de 2026
 
-Las imágenes son de la consola corriendo con los correos de ejemplo que trae el proyecto. Los números de pedido y de guía son de prueba.
+[Centro de documentación](README.md) · [Video de demostración (5:03)](https://www.youtube.com/watch?v=Q6-VDQ_lRcY) · [Guía para TI](documentacion-tecnica.md)
 
-## 1. Qué hace el sistema
+## 1. Para qué sirve y qué necesita
 
-Antes, para saber dónde iba un paquete había que abrir la página de cada transportadora, buscar la guía, copiar el estado y responderle al cliente. El sistema hace esa parte solo:
+Este manual está dirigido a quienes compran productos y revisan sus entregas. No necesita saber programar. TI debe haber instalado la consola y darle su dirección. Use un computador con navegador y acceso a la red donde está el sistema.
 
-1. Usted registra la compra con la tienda y el número de pedido.
-2. Cuando la tienda manda el correo de despacho, el sistema lo lee, saca la guía y la pega al producto.
-3. Las novedades de la transportadora llegan por 17TRACK, un servicio que reúne el seguimiento de miles de transportadoras.
-4. Con esa información el sistema decide si mueve el estado del producto o si lo **retiene**.
+Usted registra la compra. El sistema puede leer la guía del correo de despacho, reunir las novedades de transporte y decidir si actualiza el estado. Si algo no coincide, conserva el estado anterior y muestra una retención para que una persona revise.
 
-La regla es simple: **el estado se aplica solo cuando la evidencia alcanza**. Si algo no cuadra, por ejemplo la transportadora dice "entregado" pero en otra ciudad, el estado no se mueve y el producto queda para que una persona lo revise. Su trabajo pasa a ser atender esas excepciones, no consultar todo a mano.
+La solución está terminada y funcionando dentro del alcance aceptado en la reunión con el cliente. La integración real con 17TRACK y las APIs disponibles está conectada. También puede usar ejemplos para practicar sin modificar la operación real. Las capturas de este manual usan datos sintéticos; los números mostrados son ejemplos. La consola es la interfaz entregada para Compras y no reemplaza el portal del cliente ni Control.
 
-## 2. Cómo entrar a la consola
+## 2. Entrar a la consola
 
-1. Abra el navegador (Chrome, Edge o Firefox) en el computador de la oficina.
-2. Escriba la dirección que le dio TI. En una instalación local es `http://127.0.0.1:8787`.
-3. La consola no pide usuario. Está pensada para la red interna de Grab It.
+1. Abra Chrome, Edge o Firefox.
+2. Escriba la dirección que le dio TI. Si está en el mismo equipo donde corre el sistema: http://127.0.0.1:8787.
+3. Confirme que aparecen Cola de hoy, Buzón y Registrar compra.
 
-Arriba hay tres pestañas: **Cola de hoy**, **Buzón** y **Registrar compra**.
-
-Si la página dice que la consola no está compilada o no carga, avísele a TI. No es algo que usted tenga que arreglar.
+La consola de prueba no pide una cuenta de usuario. Solo debe abrirse en el equipo o la red controlada que TI haya preparado. Si no abre, comunique a TI la dirección y el mensaje que aparece. Si dice que falta compilar la consola, la solución corresponde a TI.
 
 ## 3. Registrar una compra
 
-Haga esto apenas se compre el producto, antes de que llegue la guía. Si el producto no está registrado, el correo de la tienda no tiene a qué pegarse.
+Registre el producto antes de que llegue el correo de despacho. Si no está registrado, el sistema no sabrá a qué compra corresponde la guía.
 
 ![Registrar compra](img/05-registrar-compra.png)
 
-| Campo | Qué poner |
+1. Abra Registrar compra.
+2. Complete los campos de la tabla.
+3. Pulse Registrar.
+4. Abra Cola de hoy y compruebe que el producto aparece en Comprado.
+
+| Campo | Qué escribir |
 | --- | --- |
-| Identificador | Un nombre corto para reconocer el producto, por ejemplo `audifonos`. |
-| Modo | **Internacional** si va primero a la bodega en Estados Unidos. **Nacional** si va directo al cliente. |
-| País y ciudad del cliente | A dónde tiene que llegar. El sistema compara esta ciudad con la de la entrega. |
-| Tienda | Amazon, Mercado Libre, eBay, Alibaba o Homecenter. |
-| Número de pedido | El número que da la tienda, tal cual aparece en su correo. |
+| Identificador | Un nombre corto y único, por ejemplo audifonos-demo |
+| Modo | Internacional si pasa por una bodega fuera de Colombia; Nacional si va directo al cliente |
+| País y ciudad del cliente | El destino real de entrega; por ejemplo CO y Bogotá |
+| Tienda | La tienda que aparece en el correo |
+| Número de pedido | El número completo que entregó la tienda, sin confundirlo con la guía |
 
-Pulse **Registrar**. El producto aparece en **Cola de hoy** en la etapa **Comprado**.
+Ejemplo del recorrido de Amazon: identificador audifonos; modo Internacional; país CO; ciudad Bogotá; tienda Amazon; pedido 112-4455667-1234567. Use estos datos solo en la demostración. Para un pedido real, copie los datos de su compra.
 
-## 4. Leer el estado de los envíos (Cola de hoy)
+## 4. Revisar Cola de hoy
 
 ![Cola de hoy](img/01-cola-de-hoy.png)
 
-Arriba hay tres cifras: cuántos productos hay, cuántos tienen alguna alerta o retención y cuántos están al día.
+Cada tarjeta corresponde a un producto. Muestra etapa, guía, transportadora y alertas. Arriba se resumen productos, productos que necesitan atención y productos al día. Pulse Actualizar para traer la información más reciente de la consola.
 
-Cada tarjeta es un producto. Muestra la guía, la transportadora, la etapa y una barra con cinco tramos:
+El recorrido visible al cliente se resume en Comprado → Alistamiento → Enviado → En camino → Entregado. En la consola puede ver nombres más precisos, como Pre-alertado o En bodega. Una entrega en una bodega internacional no significa que el cliente haya recibido el producto.
 
-**Comprado → Alistamiento → Enviado → En camino → Entregado**
-
-Son los mismos cinco estados que ya ve el cliente. Al lado derecho de cada tarjeta aparece:
-
-- la etapa actual, o la etiqueta **retenido** si el sistema no movió el estado;
-- las alertas, si hay alguna (ver la tabla de abajo);
-- **Sin alertas** cuando todo está en orden.
-
-Para ver el detalle, haga clic en la guía de la tarjeta. Se abre la ficha:
+Haga clic en la guía para abrir la ficha. Allí se conservan los tramos, los eventos recibidos y el motivo de una retención. Compare la ciudad y el país del evento con el destino de la compra.
 
 ![Ficha del producto](img/02-ficha-producto.png)
 
-La ficha dice en qué etapa está, de dónde salió esa información (el correo de la tienda o la transportadora) y los últimos eventos.
+No utilice Quitar con pedidos reales: elimina el producto y parte de su historial, sin papelera. Resérvelo para ejemplos descartables. Si registró mal un pedido real, comuníquelo a TI o al responsable antes de modificarlo. Corregir una guía mediante anulación conserva su registro; es distinto de quitar un producto.
 
-**Actualizar** vuelve a cargar la cola. **Quitar** borra el producto de la cola. Úselo solo si se registró por error.
+## 5. Atender alertas y retenciones
 
-## 5. Revisar lo retenido y las alertas
+Empiece por las tarjetas retenidas o con alerta. Abra la ficha, lea el motivo y confirme con la tienda, la transportadora o el responsable correspondiente. No anuncie Entregado por una sola señal dudosa.
 
-Esta es la parte del día que sí necesita a una persona. Revise primero las tarjetas que dicen **retenido** o que tienen una alerta.
-
-| Lo que dice la tarjeta | Qué significa | Qué hacer |
+| Mensaje | Qué significa | Qué hacer |
 | --- | --- | --- |
-| **retenido** | La transportadora reportó algo, pero la evidencia no alcanzó para mover el estado. La razón aparece al lado. | Abra la ficha y lea la razón. Si es una entrega en otra ciudad o una entrega parcial, confirme con la transportadora o con el cliente antes de avisarle. |
-| **Revisión** | Algo no cuadra, por ejemplo hay eventos anteriores al registro de la guía. Puede ser el paquete de otra persona. | Compare la guía con la del correo de la tienda. Si está mal, corríjala. |
-| **Destino** | La ciudad o el país de la entrega no es la del cliente. | Confirme la dirección con el cliente y con la transportadora. |
-| **Sin guía** | La transportadora no reconoce el número. A veces la guía se copió mal. | Revise el número en el correo de la tienda. |
-| **Sin novedad** | Pasaron varios días sin movimiento. | Pregunte a la transportadora o a la tienda. |
-| **Falta guía** | El tramo anterior terminó, pero no ha llegado la guía del siguiente. | Pida la guía del siguiente tramo a la bodega o al courier. |
-| **Entrega parcial** | Llegó solo una parte de las cajas. | No avise "entregado" al cliente todavía. |
-| **Preguntar** | Ya toca preguntar por el pedido. | Escríbale a la tienda o a la transportadora. |
+| Retenido | El sistema recibió una novedad, pero no tiene pruebas suficientes para cambiar el estado | Lea el motivo y confirme los datos antes de avisar al cliente |
+| Revisión | Hay datos que no coinciden, como fechas anteriores al registro | Compare la guía y el pedido con el correo original |
+| Destino | La ciudad o país no coincide | Confirme la dirección con la transportadora y el cliente |
+| Sin guía | La transportadora no reconoce el número | Compare el número con el aviso de despacho |
+| Sin novedad | Se agotó el plazo sin movimiento | Pregunte a la tienda o transportadora y registre la gestión |
+| Falta guía | Terminó un tramo y falta el siguiente | Pida la guía a la bodega o courier |
+| Entrega parcial | Falta una o más cajas | Espere o confirme las cajas faltantes |
+| Preguntar | Llegó la fecha de consultar el pedido | Contacte al responsable del envío |
 
-El sistema nunca marca **Entregado** con una sola pista dudosa. Si usted ve un estado que le parece mal, no lo cambie por fuera: avísele a TI con la guía y lo que vio.
+Ejemplo: el cliente está en Bogotá, pero el evento dice Entregado en Medellín. La decisión queda retenida. Verifique la dirección; no trate esa entrega como confirmación del cliente. Si después llega evidencia válida en Bogotá, el sistema vuelve a evaluar el estado.
 
-## 6. Cuando un correo no se reconoce (Buzón)
+## 6. Revisar correos en Buzón
 
-En la pestaña **Buzón** se ve cada correo que el sistema leyó, en tres pasos: **1. Llegó** (de quién), **2. Lectura** (qué tienda, pedido y guía encontró) y **3. Producto** (a qué producto quedó pegado).
+TI configura la cuenta y prueba la conexión. Para su trabajo cotidiano:
 
-Un correo que salió bien se ve así:
+1. Abra Buzón y compruebe que la vigilancia esté activa.
+2. Para una lectura inmediata, pulse Leer ahora.
+3. Revise la extracción terminada. Cada mensaje muestra Llegó, Lectura y Producto.
+4. Compruebe que la tienda, el pedido y la guía corresponden a la compra correcta.
+
+La vigilancia revisa el correo aproximadamente cada 45 segundos mientras el servidor esté encendido. Cada lectura tiene un límite de mensajes; si hay muchos correos atrasados, pida a TI que revise el periodo y la recuperación. Actualizar la página no obliga a una transportadora a producir una nueva novedad.
 
 ![Correo asociado](img/03-buzon-asociada.png)
 
-Si en el paso 3 dice **Ningún producto tiene ese pedido**, la tarjeta queda marcada **sin producto**:
+Si aparece Ningún producto tiene ese pedido o sin producto, confirme primero que esa compra pertenece a la operación. Si es correcta:
+
+1. Revise la tienda y el número de pedido leídos.
+2. Escriba la ciudad real del cliente.
+3. Elija Nacional o Internacional.
+4. Pulse Vincular y compruebe el producto en Cola de hoy.
 
 ![Correo sin producto](img/04-sin-producto.png)
 
-Casi siempre es porque la compra no se registró antes. Desde la misma tarjeta:
+| Resultado | Cómo actuar |
+| --- | --- |
+| Ya estaba | La guía ya existía; no debe volver a registrarla |
+| Ignorado | Puede ser publicidad o un correo sin datos de despacho; revise si esperaba una guía |
+| Sin guía | Espere el aviso que sí contenga la guía o pídala a la tienda |
+| Formato desconocido | Avise a TI con un ejemplo del correo, ocultando datos personales innecesarios |
+| Error de conexión | Avise a TI; no publique ni comparta contraseñas en capturas |
 
-1. Escriba la ciudad del cliente.
-2. Elija el modo: **Internacional** o **Nacional**.
-3. Pulse **Vincular**. El sistema crea el producto con ese pedido y le pega la guía.
+## 7. Seguimiento y modo de demostración
 
-Otros casos:
+El bloque de 17TRACK permite Consultar una guía y Traer registradas. TI debe indicar si la instalación usa ejemplos grabados o consulta real. Sin una llave de API, el modo predeterminado usa respuestas de prueba; una tarjeta de ejemplo no confirma un envío real.
 
-- **Ya estaba**: esa guía ya se había leído. No se crea nada nuevo y no hay que hacer nada.
-- **Ignorado**: el correo no es un despacho (publicidad, por ejemplo). No hay que hacer nada.
-- **El correo trae el pedido pero no la guía**, como pasa a veces con Alibaba: espere el siguiente correo de la tienda o pídale la guía.
-- **Una tienda nueva o un correo con formato raro** que el sistema no entiende: avísele a TI y reenvíeles el correo. Ellos lo agregan a las pruebas para que la próxima vez sí se lea.
+En modo real, Consultar puede registrar una guía y consumir la cuota del servicio. Si la guía no existía en el módulo, puede crearse un producto auxiliar con valores de demostración; compruebe el destino, la tienda y la compra con TI antes de usarlo para informar al cliente. Traer registradas importa guías de la cuenta; no sustituye la conciliación de pedidos.
 
-La cuenta de correo y la vigilancia del buzón las configura TI. Si ve **Vigilancia detenida** y no están llegando guías, avísele a TI.
+Cargar correos de ejemplo y las demostraciones deben usarse únicamente con la base de prueba indicada por TI. No ejecute las demostraciones sobre pedidos reales. Los botones de envío de aviso utilizan la cuenta configurada; coordine su uso para no confundir esos correos con despachos de la operación.
 
-## 7. Preguntas frecuentes
+### Cómo ayuda la inteligencia artificial
 
-**¿Tengo que entrar a la página de la transportadora?**
-Solo para los productos retenidos o con alerta. El resto se mueve solo.
+Cuando TI habilita esta función, el sistema puede interpretar frases de un correo o de una novedad de transporte que las reglas no reconocen con claridad. Por ejemplo, una frase que describe que el cliente recibió el paquete puede ayudar a identificar una entrega.
 
-**¿Cada cuánto se actualiza?**
-El buzón se lee cada 45 segundos cuando la vigilancia está activa. Las novedades de 17TRACK llegan cuando la transportadora reporta algo. Pulse **Actualizar** para ver lo último.
+Usted no necesita escribir instrucciones a la IA ni configurar una cuenta adicional. Revise siempre el estado y las razones de la ficha. Un correo que solo anuncia el despacho sigue siendo un despacho, y una entrega en otra ciudad necesita revisión. Si el servicio de IA no responde, el sistema conserva su lectura habitual por reglas.
 
-**¿Qué ve el cliente?**
-Los mismos cinco estados, sin guías, sin nombres de transportadora y sin las alertas internas.
+## 8. Ejercicio práctico sin correo real
 
-**Registré mal un producto. ¿Qué hago?**
-Pulse **Quitar** en la tarjeta y regístrelo otra vez con los datos correctos.
+Pida a TI una instalación descartable en modo de ejemplos. Este ejercicio no necesita credenciales.
 
-**Un producto tiene dos guías.**
-Es normal: una de la bodega en Miami, otra del courier y otra de la última milla. El sistema las guarda en orden en la misma ficha.
+1. Registre el ejemplo de Amazon de la sección 3.
+2. Abra Buzón y pulse Cargar correos de ejemplo.
+3. Busque el mensaje Amazon del pedido 112-4455667-1234567.
+4. Compruebe que aparece asociado a audifonos con la guía 1Z999AA10123456784.
+5. Abra Cola de hoy y la ficha. El correo de despacho puede dejar la etapa Enviado; no equivale a una entrega al cliente.
+6. Vuelva a cargar los ejemplos y confirme Ya estaba para esa guía.
 
-**¿Para qué es el bloque 17TRACK de Cola de hoy?**
-**Consultar** busca una guía real en 17TRACK. **Traer registradas** baja las guías que ya están en la cuenta. Cada guía nueva que se consulta gasta cuota de la cuenta, así que úselo solo cuando haga falta.
+Resultado esperado: una compra asociada a su guía y sin duplicado al repetir la lectura. Otros correos del ejercicio pueden quedar sin producto o sin guía; eso permite practicar la revisión de excepciones.
 
-**La consola no abre o dice que hay un error.**
-Avísele a TI. Dígale qué estaba haciendo y, si puede, mándele una captura de pantalla.
+## 9. Dudas frecuentes y ayuda
+
+¿Tengo que consultar todas las transportadoras? Con las integraciones reales configuradas, revise principalmente las alertas. En una instalación de prueba los ejemplos no sustituyen la consulta real.
+
+¿Por qué una guía puede cambiar? Un producto puede pasar por bodega, courier y última milla. Las guías pertenecen a tramos distintos y se deben conservar en la misma ficha.
+
+¿Por qué no cambia el estado? Puede faltar evidencia, la entrega ser parcial, no coincidir el destino o no haber llegado una novedad real. Abra la ficha antes de pedir un cambio manual.
+
+¿Se actualiza después de apagar el equipo? TI debe encender el servidor. Cuando una cuenta de buzón válida está guardada, la versión de esta entrega vuelve a activar su vigilancia al arrancar. Compruebe su estado en Buzón.
+
+¿Qué hago si registré mal una compra? Anote el identificador y el dato incorrecto y avise al responsable. No quite un pedido real para corregirlo sin un procedimiento de conservación.
+
+¿Qué envío a soporte? La acción que estaba intentando, la hora aproximada, el identificador del producto, el mensaje de error y una captura sin contraseñas ni datos personales innecesarios. Utilice el canal de soporte acordado para la operación.
+
+Antes de terminar su revisión diaria: atienda las tarjetas retenidas, compruebe que el buzón esté funcionando y deje registradas las gestiones pendientes. Las capturas de ejemplo explican el uso del sistema. Los beneficios económicos se revisan durante la operación sin modificar la aceptación funcional ya acordada con el cliente.
+
+Fuente: consola, código y capturas del repositorio [prototype-grabit](https://github.com/EstebanForero/prototype-grabit), base funcional [`071fb83`](https://github.com/EstebanForero/prototype-grabit/tree/071fb8357351e7d38d23e29d142617cfe1c2d6f0). Las capturas son ejemplos de uso con datos sintéticos.
