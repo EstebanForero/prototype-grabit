@@ -9,7 +9,7 @@ Módulo de seguimiento logístico: reúne correos de despacho y eventos de trans
 | Registrar compras, revisar guías y atender alertas | [Manual de usuario con capturas](manual-usuario.md) |
 | Instalar, configurar, ejecutar o mantener el sistema | [Documentación técnica](documentacion-tecnica.md) |
 | Descargar los manuales | [Manual de usuario PDF](manual-usuario.pdf) · [Documentación técnica PDF](documentacion-tecnica.pdf) |
-| Presentar el producto y su continuidad | [Presentación en Canva](https://canva.link/dl65bgwg23bmh6b) |
+| Presentar el producto y su continuidad | [Presentación en Canva](https://canva.link/fusn3pbg6o7c97a) |
 | Ver el MVP funcionando | [Video narrado · 5:03](https://www.youtube.com/watch?v=Q6-VDQ_lRcY) |
 | Revisar el código, pruebas y workflows | [Repositorio principal](../README.md) |
 | Revisar el informe completo y los análisis de negocio | [Informe final en Typst](https://typst.app/project/pQ1sG2QUVmHVALKeXiJzrB) |

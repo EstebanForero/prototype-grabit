@@ -15,7 +15,7 @@ La solución está terminada y funcionando dentro del alcance aceptado con Grab 
 | [Centro de documentación](docs/README.md) | Acceso organizado a manuales, arquitectura, instalación y evidencia |
 | [Manual de usuario](docs/manual-usuario.md) | Compras y operación: pasos, capturas, tareas habituales y solución de errores |
 | [Documentación técnica](docs/documentacion-tecnica.md) | TI: arquitectura, dependencias, configuración, API, base de datos, pruebas y mantenimiento |
-| [Presentación de producto e inversión en Canva](https://canva.link/dl65bgwg23bmh6b) | Grab It, funcionamiento y propuesta de continuidad por COP 9.000.000 |
+| [Presentación de producto e inversión en Canva](https://canva.link/fusn3pbg6o7c97a) | Grab It, funcionamiento y propuesta de continuidad por COP 9.000.000 |
 | [Video narrado del MVP · 5:03](https://www.youtube.com/watch?v=Q6-VDQ_lRcY) | Solución funcionando y comprobaciones del comportamiento |
 | [Informe académico en Typst](https://typst.app/project/pQ1sG2QUVmHVALKeXiJzrB) | Documento consolidado: proceso, impacto, finanzas, riesgos y anexos |
 | [IA para mantenimiento del parser](harness/INFORME.md) | Agente de programación, verificación, evidencia y límites |
