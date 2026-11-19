@@ -22,7 +22,7 @@ Muestra el flujo completo con la API v2.2 de 17TRACK (`https://api.17track.net/t
 ```sh
 bun install
 bun run demo:17track          # consola: los 6 correos de punta a punta
-bun test                      # 43 pruebas, incluye tests/track17.test.ts
+bun test                      # 45 pruebas, incluye tests/track17.test.ts
 ```
 
 Con la consola web:

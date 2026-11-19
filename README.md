@@ -101,7 +101,7 @@ bun run start
 
 Salud: `curl -s http://127.0.0.1:8787/health`. Tiene que responder `{"ok":true,"service":"grabit-seguimiento"}`.
 
-`bun test` ejecuta las historias de operación, el flujo persistido y el lector de correo. Son 43 pruebas. `bun run demo` recorre en la terminal dos productos: los audífonos, con tres guías hasta la entrega en Bogotá, y un monitor nacional cuyo primer «entregado» llega desde Medellín y se retiene. Escribe en `data/demo.sqlite`, no en la base de la consola. Para ver la ficha del demo, apunte la CLI a esa base:
+`bun test` ejecuta las historias de operación, el flujo persistido, el lector de correo y la selección del tramo vigente en la consola. Son 45 pruebas. `bun run demo` recorre en la terminal dos productos: los audífonos, con tres guías hasta la entrega en Bogotá, y un monitor nacional cuyo primer «entregado» llega desde Medellín y se retiene. Escribe en `data/demo.sqlite`, no en la base de la consola. Para ver la ficha del demo, apunte la CLI a esa base:
 
 ```bash
 GRABIT_DB=data/demo.sqlite bun src/cli/main.ts ficha --producto audifonos

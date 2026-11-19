@@ -228,6 +228,8 @@ export function Mail({ onLinked }: { onLinked: () => void }) {
     key: [selected?.id, item.from, item.subject, item.parsed?.trackingNumber || item.detail].join("|"),
     fresh: selected?.id === freshId,
   }));
+  const dispatchCards = cards.filter((item) => item.outcome !== "ignorado");
+  const ignoredCards = cards.filter((item) => item.outcome === "ignorado");
 
   return (
     <div className="flex flex-col gap-4">
@@ -290,9 +292,21 @@ export function Mail({ onLinked }: { onLinked: () => void }) {
           <RunGroup title="Ejecutadas" empty="Todavía no hay extracciones." runs={finished} selectedId={selected?.id} onOpen={setSelectedId} />
         </CardContent>
       </Card>
-      {cards.map((item) => (
+      {dispatchCards.map((item) => (
         <ArrivalCard key={item.key} item={item} onLinked={onLinked} onStatus={setStatus} />
       ))}
+      {ignoredCards.length > 0 && (
+        <details key={selected?.id} className="rounded-md border bg-card p-3">
+          <summary className="cursor-pointer text-sm font-medium">
+            {ignoredCards.length} correos que no son despachos
+          </summary>
+          <div className="mt-3 flex flex-col gap-4">
+            {ignoredCards.map((item) => (
+              <ArrivalCard key={item.key} item={{ ...item, fresh: false }} onLinked={onLinked} onStatus={setStatus} />
+            ))}
+          </div>
+        </details>
+      )}
       {(() => {
         const indexed = samples.map((item, index) => ({ item, index }));
         const matched = indexed.filter(({ item }) => item.outcome === "creado" || item.outcome === "ya-estaba" || item.outcome === "actualizado");
