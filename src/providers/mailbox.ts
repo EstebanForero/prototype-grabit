@@ -85,13 +85,13 @@ function headerLine(raw: string, name: string): string {
   return head.match(new RegExp(`^${name}:\\s*(.+)$`, "im"))?.[1]?.trim() ?? "";
 }
 
-export function applyMessage(store: TrackingStore, raw: string, subject = "", from = ""): ScanItem {
+export async function applyMessage(store: TrackingStore, raw: string, subject = "", from = ""): Promise<ScanItem> {
   const fromLine = from || headerLine(raw, "from");
   const subjectLine = subject || headerLine(raw, "subject");
   const text = `From: ${fromLine}\nSubject: ${subjectLine}\n\n${messageText(raw)}`;
   const parsed = parseDispatchEmail(text);
   if ("error" in parsed) return { subject: subjectLine, from: fromLine, outcome: "ignorado", detail: parsed.error };
-  const ingested = store.ingestEmail(text);
+  const ingested = await store.ingestEmail(text);
   if (ingested.shipmentId) {
     const updated = ingested.updated === true;
     const already = ingested.linkedExisting === true && !updated;
@@ -100,7 +100,7 @@ export function applyMessage(store: TrackingStore, raw: string, subject = "", fr
       from: fromLine,
       outcome: updated ? "actualizado" : already ? "ya-estaba" : "creado",
       detail: updated
-        ? `La guía ${parsed.trackingNumber} actualizó el estado del pedido ${parsed.storeOrderNumber}.`
+        ? `La guía ${parsed.trackingNumber} actualizó el estado del pedido ${parsed.storeOrderNumber}.${ingested.reading ? ` ${ingested.reading}` : ""}`
         : already
           ? `La guía ${parsed.trackingNumber} ya estaba registrada. No se crea otra.`
           : `Guía ${parsed.trackingNumber} asociada al pedido ${parsed.storeOrderNumber}.`,
@@ -134,7 +134,7 @@ export async function scanMailbox(store: TrackingStore, config: MailboxConfig, o
         if (!message || !message.source) continue;
         const from = message.envelope?.from?.[0]?.address ?? "";
         const subject = message.envelope?.subject ?? "";
-        items.push(applyMessage(store, message.source.toString("utf8"), subject, from));
+        items.push(await applyMessage(store, message.source.toString("utf8"), subject, from));
       }
     } finally {
       lock.release();

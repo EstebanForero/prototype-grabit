@@ -244,7 +244,7 @@ export function Mail({ onLinked }: { onLinked: () => void }) {
           <CardDescription>Con IMAP real o, sin cuenta externa, con los correos de ejemplo de fixtures/.</CardDescription>        </CardHeader>
         <CardContent className="flex flex-col gap-3 text-sm">
           <p>La sustentación usa una cuenta personal gratuita, vacía, creada solo para esto. No es Gmail Workspace ni el buzón de Grab It. En Gmail se activa la verificación en dos pasos y se crea una contraseña de aplicación. La clave normal de la cuenta no sirve. Yahoo pide lo mismo. GMX usa su clave normal después de activar IMAP en el webmail.</p>
-          <p>Hay dos avisos, en este orden. «Enviar despacho» manda la salida del pedido 112-4455667-1234567, guía 1Z999AA10987654321. Cuando Cola de hoy diga Enviado, «Enviar entrega» manda la entrega en Bogotá. El producto tiene que ser nacional, con ciudad Bogotá. Cola de hoy pasa a Entregado.</p>
+          <p>Hay dos avisos, en este orden. «Enviar despacho» manda la salida del pedido 112-4455667-1234567, guía 1Z999AA10987654321. Cuando Cola de hoy diga Enviado, «Enviar entrega» manda la entrega en Bogotá. Cola de hoy pasa a Entregado. Si el texto no usa esas frases, hace falta XAI_API_KEY en el servidor: el modelo lee el evento y la ciudad, y Entregado solo queda si el lugar es el del cliente.</p>
           <Button type="button" variant="outline" className="self-start" onClick={() => void loadSamples()} disabled={busy}>Cargar correos de ejemplo</Button>          <Separator />
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => patch(PRESETS.gmail)}>Gmail</Button>

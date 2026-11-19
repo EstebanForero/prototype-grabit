@@ -10,6 +10,7 @@ import {
   type MailboxConfig,
 } from "../providers/mailbox.ts";
 import { sendDispatch } from "../providers/smtp.ts";
+import { refineUnknown } from "../providers/status-model.ts";
 import { followGuide, pullRegistered } from "../providers/track17-sync.ts";
 import { track17Client, track17FromEnv, track17Status, track17WebhookSign } from "../providers/track17.ts";
 import { runDemo17 } from "../cli/demo17.ts";
@@ -43,16 +44,17 @@ export async function handleAggregatorRequest(store: TrackingStore, request: Req
   if (events.length === 0) return Response.json({ error: "El aviso no trae eventos reconocibles." }, { status: 422 });
   const results = [];
   for (const event of events) {
+    const read = await refineUnknown(event);
     results.push(
       store.ingestObservation({
-        trackingNumber: event.trackingNumber,
-        occurredAt: event.occurredAt,
-        code: event.code,
-        text: event.text,
-        city: event.city,
-        country: event.country,
-        reportedDestinationCity: event.reportedDestinationCity,
-        reportedDestinationCountry: event.reportedDestinationCountry,
+        trackingNumber: read.trackingNumber,
+        occurredAt: read.occurredAt,
+        code: read.code,
+        text: read.text,
+        city: read.city,
+        country: read.country,
+        reportedDestinationCity: read.reportedDestinationCity,
+        reportedDestinationCountry: read.reportedDestinationCountry,
         raw: payload,
         source: "aggregator",
       }),
@@ -75,7 +77,10 @@ export async function handleTrack17Webhook(store: TrackingStore, request: Reques
   }
   const events = parseAggregatorWebhook(payload);
   if (events.length === 0) return Response.json({ received: 0 });
-  const results = events.map((event) => store.ingestObservation({ ...event, raw: payload, source: "aggregator" }));
+  const results = [];
+  for (const event of events) {
+    results.push(store.ingestObservation({ ...(await refineUnknown(event)), raw: payload, source: "aggregator" }));
+  }
   return Response.json({ received: events.length, results });
 }
 
@@ -268,7 +273,7 @@ if (import.meta.main) {
           const items = [];
           for (const file of files) {
             const raw = await Bun.file(join(import.meta.dir, "../../fixtures/correos", file)).text();
-            items.push(applyMessage(store, raw));
+            items.push(await applyMessage(store, raw));
           }
           return Response.json({
             examined: items.length,
@@ -292,7 +297,7 @@ if (import.meta.main) {
             store: storeName,
             storeOrderNumber: order,
           });
-          const linked = store.ingestEmail(
+          const linked = await store.ingestEmail(
             `From: ${storeName}\nSubject: pedido ${order}\n\nPedido ${order}\nTransportadora: ${text(body.carrier) ?? "transportadora"}\nGuía: ${tracking}\n`,
           );
           return Response.json({ product, shipmentId: linked.shipmentId ?? null });

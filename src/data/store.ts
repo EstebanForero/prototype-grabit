@@ -27,7 +27,9 @@ import { nextCheckAt, questionsDue, type ContactAnswer } from "../core/contact.t
 import { decideManually, evaluate } from "../core/decision.ts";
 import { eventsFromAlerts, eventsFromDecision } from "../core/events.ts";
 import { looksLikeTracking } from "../core/normalize.ts";
+import { sameCity, sameCountry } from "../core/places.ts";
 import { emailUpdate, parseDispatchEmail } from "../providers/email.ts";
+import { mergeReading, modelConfigured, readEvent } from "../providers/status-model.ts";
 
 interface ProductRow {
   id: string;
@@ -418,7 +420,7 @@ export class TrackingStore {
     return { duplicate: false, decisions, events };
   }
 
-  ingestEmail(raw: string): { parsed: ReturnType<typeof parseDispatchEmail>; shipmentId?: string; linkedExisting?: boolean; updated?: boolean } {
+  async ingestEmail(raw: string): Promise<{ parsed: ReturnType<typeof parseDispatchEmail>; shipmentId?: string; linkedExisting?: boolean; updated?: boolean; reading?: string }> {
     const parsed = parseDispatchEmail(raw);
     if ("error" in parsed) return { parsed };
     const row = this.db
@@ -427,7 +429,14 @@ export class TrackingStore {
       )
       .get(parsed.store, parsed.storeOrderNumber) as { id: string } | null;
     if (!row) return { parsed };
-    const update = emailUpdate(raw);
+    const product = this.mustProduct(row.id);
+    const rule = emailUpdate(raw);
+    const model = modelConfigured() && rule.code === "picked_up"
+      ? await readEvent({ text: raw, customerCity: product.customerCity, customerCountry: product.customerCountry })
+      : null;
+    const merged = mergeReading(rule, model, raw);
+    const update = { code: merged.code, city: merged.city, country: merged.country };
+    const reading = merged.because;
     const created = this.registerShipment({
       productIds: [row.id],
       trackingNumber: parsed.trackingNumber,
@@ -449,6 +458,13 @@ export class TrackingStore {
     }
     let updated = false;
     if (update.code !== "picked_up") {
+      const product = this.mustProduct(row.id);
+      const deliveredHome = update.code === "delivered"
+        && sameCountry(update.country, product.customerCountry)
+        && Boolean(update.city && product.customerCity && sameCity(update.city, product.customerCity));
+      if (deliveredHome) {
+        this.db.query("UPDATE shipments SET destination = 'customer' WHERE id = ?").run(created.shipmentId);
+      }
       const already = this.db
         .query("SELECT id FROM observations WHERE shipment_id = ? AND source = 'email' AND code = ? LIMIT 1")
         .get(created.shipmentId, update.code) as { id: string } | null;
@@ -459,17 +475,21 @@ export class TrackingStore {
           source: "email",
           occurredAt,
           code: update.code,
-          text: update.code === "delivered"
+          text: `${update.code === "delivered"
             ? `La tienda avisó por correo que entregó${where ? ` en ${where}` : ""}.`
-            : `La tienda avisó por correo que el paquete va hacia el cliente${where ? ` (${where})` : ""}.`,
+            : `La tienda avisó por correo que el paquete va hacia el cliente${where ? ` (${where})` : ""}.`}${reading ? ` Lectura del modelo: ${reading}` : ""}`,
           city: update.city,
           country: update.country,
-          raw: { store: parsed.store, order: parsed.storeOrderNumber, movement: update.code },
+          raw: { store: parsed.store, order: parsed.storeOrderNumber, movement: update.code, model: reading },
         });
         updated = true;
+      } else if (deliveredHome) {
+        const before = this.mustProduct(row.id).status;
+        this.reprocessProducts([row.id]);
+        updated = this.mustProduct(row.id).status !== before;
       }
     }
-    return { parsed, shipmentId: created.shipmentId, linkedExisting: created.linkedExisting, updated };
+    return { parsed, shipmentId: created.shipmentId, linkedExisting: created.linkedExisting, updated, reading };
   }
 
   listTracking(): TrackingRow[] {

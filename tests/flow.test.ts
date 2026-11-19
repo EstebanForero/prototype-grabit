@@ -92,7 +92,7 @@ describe("flujo persistido", () => {
     const raw = await Bun.file(join(root, "fixtures/correos/amazon.txt")).text();
     const parsed = parseDispatchEmail(raw);
     expect("trackingNumber" in parsed && parsed.trackingNumber).toBe("1Z999AA10123456784");
-    const ingested = store.ingestEmail(raw);
+    const ingested = await store.ingestEmail(raw);
     expect(ingested.shipmentId).toBeTruthy();
     const dossier = store.dossier(product.id);
     expect(dossier.shipments[0]?.trackingNumber).toBe("1Z999AA10123456784");
@@ -106,7 +106,7 @@ describe("flujo persistido", () => {
       store: "amazon",
       storeOrderNumber: "112-4455667-1234567",
     });
-    const second = store.ingestEmail(raw);
+    const second = await store.ingestEmail(raw);
     expect(second.linkedExisting).toBe(false);
     expect(store.dossier(again.id).shipments[0]?.trackingNumber).toBe("1Z999AA10123456784");
     store.close();

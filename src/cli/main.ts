@@ -95,7 +95,7 @@ try {
   } else if (command === "correo") {
     const store = open();
     const raw = await Bun.file(required("archivo")).text();
-    const result = store.ingestEmail(raw);
+    const result = await store.ingestEmail(raw);
     console.log(JSON.stringify(result, null, 2));
     store.close();
   } else if (command === "demo-17track") {

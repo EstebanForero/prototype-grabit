@@ -18,7 +18,7 @@ La guía de este recorrido es `1Z999AA10987654321`. No uses `1Z999AA10123456784`
 
 ### Producto
 
-En **Registrar compra**, antes del primer correo. El modo tiene que ser nacional: el envío va al cliente, y así el segundo correo puede dejarlo en Entregado.
+En **Registrar compra**, antes del primer correo. Sirve nacional o internacional. Si el segundo correo dice que se entregó en la ciudad del cliente, la tarjeta pasa a Entregado. Una entrega en otra ciudad, en una compra internacional, se queda en Alistamiento: eso es la bodega, y falta la guía del tramo siguiente.
 
 | Campo | Valor |
 | --- | --- |
@@ -65,6 +65,10 @@ Delivered in Bogotá, CO
 Si se pulsa **Enviar entrega** otra vez, el correo se lee y no cambia el estado: la entrega ya estaba anotada.
 
 No pulses **Traer registradas** en medio de estos dos correos. Ese botón baja las guías de 17TRACK, y esta demostración es solo el email.
+
+### Cuando el texto no es el de estos dos avisos
+
+Con `XAI_API_KEY` en `.env` (la llave de https://console.x.ai, modelo `grok-4.7`), cada correo que las reglas solo leen como «salió» y cada evento de transportadora que no reconocen pasa por el modelo. El modelo dice qué clase de evento es y, si el texto lo trae, la ciudad. Entregado sigue exigiendo que ese lugar sea el del cliente. Sin la llave, el recorrido de arriba funciona igual, solo con las frases conocidas. Después de pegar la llave hay que volver a arrancar el servidor.
 
 ## 2. 17TRACK
 

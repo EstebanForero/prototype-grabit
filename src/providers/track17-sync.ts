@@ -1,4 +1,5 @@
 import { TrackingStore } from "../data/store.ts";
+import { refineUnknown } from "./status-model.ts";
 import { carrierName, observationsFrom, type Track17Client, type Track17Info, type Track17Listed } from "./track17.ts";
 
 export interface Track17Pull {
@@ -15,11 +16,12 @@ function chunks<T>(items: T[], size: number): T[][] {
   return out;
 }
 
-function applyInfo(store: TrackingStore, info: Track17Info): boolean {
+async function applyInfo(store: TrackingStore, info: Track17Info): Promise<boolean> {
   let applied = false;
   for (const observation of observationsFrom(info)) {
     try {
-      store.ingestObservation({ ...observation, source: "aggregator", raw: info });
+      const event = await refineUnknown(observation);
+      store.ingestObservation({ ...event, source: "aggregator", raw: info });
       applied = true;
     } catch {
       return false;
@@ -76,7 +78,7 @@ export async function pullRegistered(store: TrackingStore, client: Track17Client
         keepGuide(store, item, accepted);
         const carrier = accepted.track_info.tracking.providers.find((provider) => provider.provider?.name)?.provider.name;
         if (carrier) store.nameCarrier(accepted.number, carrier);
-        if (applyInfo(store, accepted)) updated.push(accepted.number);
+        if (await applyInfo(store, accepted)) updated.push(accepted.number);
         saved.push(accepted.number);
       } catch {
         failed.push(accepted.number);
@@ -122,7 +124,7 @@ export async function followGuide(store: TrackingStore, client: Track17Client, n
     });
     store.registerShipment({ productIds: [product.id], trackingNumber: guide, intake: "connector", registeredAt: firstEvent });
   }
-  applyInfo(store, accepted);
+  await applyInfo(store, accepted);
   const row = store.listTracking().find((item) => item.trackingNumber === guide);
   return { number: guide, status: row?.statusLabel ?? null };
 }

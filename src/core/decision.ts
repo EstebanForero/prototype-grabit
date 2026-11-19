@@ -54,9 +54,18 @@ function sourceIsAutomatic(source: Observation["source"]): boolean {
   return source === "aggregator" || source === "store" || source === "email";
 }
 
+function ownObservations(shipment: Shipment, observations: Observation[]): Observation[] {
+  return observationsOf(shipment.id, observations).filter((item) => item.occurredAt >= shipment.registeredAt);
+}
+
 function supportingObservation(shipment: Shipment, observations: Observation[]): Observation | null {
-  const own = observationsOf(shipment.id, observations).filter((item) => item.occurredAt >= shipment.registeredAt);
+  const own = ownObservations(shipment, observations);
   return own[own.length - 1] ?? null;
+}
+
+function deliveredObservation(shipment: Shipment, observations: Observation[]): Observation | null {
+  const own = ownObservations(shipment, observations);
+  return [...own].reverse().find((item) => item.code === "delivered") ?? supportingObservation(shipment, observations);
 }
 
 function propose(
@@ -93,7 +102,7 @@ function propose(
     return {
       status: "delivered",
       shipment: evidence,
-      observation: supportingObservation(evidence, observations),
+      observation: deliveredObservation(evidence, observations),
     };
   }
 

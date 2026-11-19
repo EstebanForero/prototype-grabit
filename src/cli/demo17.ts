@@ -43,7 +43,7 @@ export async function runDemo17(store: TrackingStore, client: Track17Client, dir
       store: parsed.store,
       storeOrderNumber: parsed.storeOrderNumber,
     });
-    store.ingestEmail(raw);
+    await store.ingestEmail(raw);
 
     const item = { number: parsed.trackingNumber, carrier: carrierCode(parsed.carrier) };
     const reg = await client.register([item]);
