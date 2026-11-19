@@ -1,9 +1,9 @@
-import { CLIENT_STAGES, stageFacts, stageIndex } from "@/lib/stages";
+import { CLIENT_STAGES, currentShipment, stageFacts, stageIndex } from "@/lib/stages";
 import type { Dossier } from "@/lib/types";
 
 export function ProductSheet({ dossier }: { dossier: Dossier }) {
   const current = stageIndex(dossier.product.status);
-  const shipment = dossier.shipments.find((item) => item.recordStatus === "active") ?? dossier.shipments[0];
+  const shipment = currentShipment(dossier.shipments);
   const title = shipment?.trackingNumber || dossier.product.id;
   const facts = stageFacts(dossier);
   const events = [...(dossier.observations ?? [])]

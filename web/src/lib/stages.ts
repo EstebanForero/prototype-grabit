@@ -36,11 +36,22 @@ function place(event: { city?: string; country?: string }): string {
   return [event.city, event.country].filter(Boolean).join(", ");
 }
 
+/** El tramo vigente es el último activo; los tramos anteriores conservan su historial. */
+export function currentShipment(shipments: Dossier["shipments"]): Dossier["shipments"][number] | undefined {
+  const active = shipments.filter((item) => item.recordStatus === "active");
+  const candidates = active.length > 0 ? active : shipments;
+  return candidates.reduce<Dossier["shipments"][number] | undefined>((latest, item) => {
+    if (!latest || item.registeredAt > latest.registeredAt
+      || (item.registeredAt === latest.registeredAt && item.id > latest.id)) return item;
+    return latest;
+  }, undefined);
+}
+
 /** Hechos que importan en la etapa actual. Sigue el mapeo del contrato, no el texto crudo de 17TRACK. */
 export function stageFacts(dossier: Dossier): string[] {
   const events = [...(dossier.observations ?? [])].sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
   const latest = events.at(-1);
-  const shipment = dossier.shipments.find((item) => item.recordStatus === "active") ?? dossier.shipments[0];
+  const shipment = currentShipment(dossier.shipments);
   const hold = [...dossier.decisions].reverse().find((item) => item.outcome === "hold");
   const where = shipment?.destination === "warehouse" ? "va a la bodega" : "va al cliente";
   const facts: string[] = [];

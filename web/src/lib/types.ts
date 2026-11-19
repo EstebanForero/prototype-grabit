@@ -64,7 +64,7 @@ export type TrackingRow = {
 export type Dossier = {
   product: { id: string; status: string; mode?: string; customerCountry?: string; customerCity?: string };
   clientLabel: string;
-  shipments: Array<{ id: string; trackingNumber?: string; carrier?: string; contactName?: string; destination: string; mode: string; recordStatus: string; intake: string }>;
+  shipments: Array<{ id: string; trackingNumber?: string; carrier?: string; contactName?: string; destination: string; mode: string; recordStatus: string; intake: string; registeredAt: string }>;
   observations: Array<{ id: string; occurredAt: string; code: string; text: string; city?: string; country?: string }>;
   decisions: Array<{ outcome: string; status: string; reason: string }>;
   alerts?: Array<{ kind: string; message: string }>;
