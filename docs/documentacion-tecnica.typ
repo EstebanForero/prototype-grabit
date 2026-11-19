@@ -8,23 +8,35 @@
 #set figure(gap:5pt)
 #show figure.caption:set text(size:8pt,fill:rgb("5E6B76"))
 
-#heading(level: 1, numbering: none)[#text[#text("Documentación técnica del MVP")]]
+#let navy=rgb("17324D")
+#let blue=rgb("176B87")
+#let cyan=rgb("64CCC5")
 
-#text[#text("GRAB IT · Seguimiento logístico multicanal · Entrega final · 18 de noviembre de 2026")]
+
+#set heading(numbering:none)
+#show heading.where(level:2):it=>block(above:15pt,below:7pt)[#text(size:14pt,weight:"bold",fill:navy)[#it.body]]
+#show heading.where(level:3):it=>block(above:10pt,below:5pt)[#text(size:11pt,weight:"bold",fill:blue)[#it.body]]
+
+
+#heading(level: 1, numbering: none)[Documentación técnica del MVP]
+#line(length: 100%, stroke: 1pt + cyan)
+
+
+#text[#text("GRAB IT · Seguimiento logístico multicanal · Documentación técnica · 18 de noviembre de 2026")]
 
 #text[#link("https://github.com/EstebanForero/prototype-grabit/blob/master/docs/README.md")[#text("Centro de documentación")]#text(" · ")#link("https://github.com/EstebanForero/prototype-grabit/blob/master/docs/manual-usuario.md")[#text("Manual de usuario")]#text(" · ")#link("https://github.com/EstebanForero/prototype-grabit")[#text("Código fuente")]#text(" · ")#link("https://www.youtube.com/watch?v=Q6-VDQ_lRcY")[#text("Video del MVP (5:03)")]]
 
-#text[#text("Base funcional verificada: ")#link("https://github.com/EstebanForero/prototype-grabit/tree/071fb8357351e7d38d23e29d142617cfe1c2d6f0")[#text("071fb83")]#text(". La restauración ")#link("https://github.com/EstebanForero/prototype-grabit/tree/d62585b3c1ed3523d89e8040e66ae2f918765038")[#text("d62585b")]#text(" conserva esa funcionalidad y recupera los manuales previos. Las instrucciones siguientes reproducen ese corte; el historial identifica las actualizaciones posteriores de documentación.")]
+#text[#text("Versión de la implementación: ")#link("https://github.com/EstebanForero/prototype-grabit/tree/babc0da34f2caffc9a9192274b681e00c532394c")[#text("babc0da")]#text(". El historial del repositorio conserva las revisiones del código y de su documentación.")]
 
-#heading(level: 2, numbering: none)[#text[#text("1. Propósito y alcance real")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("1. Propósito y alcance real")]]
 
 #text[#text("Esta guía permite instalar, ejecutar, probar y mantener el módulo de seguimiento. Los comandos se ejecutan en la raíz del código fuente, donde están package.json, src y web. La lectura opcional de IA de la sección 4 amplía la interpretación de textos y mantiene las reglas como respaldo. El módulo registra compras y cadenas de guías, extrae guías de correos de despacho y transforma eventos en una decisión por producto: aplicar o retener. La consola se dirige a Compras y operación; la consola constituye la interfaz entregada y no sustituye Control ni el portal existentes. El alcance funcional se dio por concluido y aceptado en la reunión con el cliente.")]
 
-#text[#text("La implementación entregada usa SQLite, también en Docker. La conexión real con 17TRACK v2.2 está implementada y funcionando con la cuenta y las APIs disponibles, según la confirmación del equipo. MySQL se conserva como esquema de referencia de portabilidad. El modo de respuestas grabadas es una herramienta adicional para reproducir pruebas sin red; complementa la integración real operativa.")]
+#text[#text("La implementación entregada usa SQLite, también en Docker. La conexión real con 17TRACK v2.2 está implementada y funcionando con la cuenta y las APIs disponibles. MySQL se conserva como esquema de referencia de portabilidad. El modo de respuestas grabadas es una herramienta adicional para reproducir pruebas sin red; complementa la integración real operativa.")]
 
-#text[#text("La consola se opera en el equipo o la red interna controlada prevista para su uso. Sus rutas no implementan una sesión propia: el acceso se administra en el entorno donde se ejecuta. La custodia de credenciales, el respaldo y la revisión de operaciones administrativas son tareas de mantenimiento de la solución aceptada, no entregables abiertos.")]
+#text[#text("La consola se opera en el equipo o la red interna controlada prevista para su uso. Sus rutas no implementan una sesión propia: el acceso se administra en el entorno donde se ejecuta. La custodia de credenciales, el respaldo y la revisión de operaciones administrativas son tareas de mantenimiento de la solución aceptada, responsabilidades de operación.")]
 
-#heading(level: 2, numbering: none)[#text[#text("2. Arquitectura y componentes")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("2. Arquitectura y componentes")]]
 
 #text[#text("El flujo es: correo IMAP o API/webhook de 17TRACK → normalización → observaciones persistidas → motor de decisión → estado aplicado o retenido → consola.")]
 
@@ -76,20 +88,20 @@
 [#text[#text("n8n envía el aviso de demostración")]],
 )]
 
-#heading(level: 3, numbering: none)[#text[#text("Tecnologías y dependencias")]]
+#heading(level: 3, numbering: none, outlined: false)[#text[#text("Tecnologías y dependencias")]]
 
-#text[#text("Bun ejecuta TypeScript, HTTP, pruebas y bun:sqlite. La imagen Docker fija oven/bun:1.4.2; la verificación de esta entrega utilizó Bun 1.4.4. La dependencia del backend es imapflow 2.2.4 según bun.lock. El frontend usa React 19, Vite 7, TypeScript 5.9, Tailwind 4 y Radix; web/bun.lock conserva las versiones resueltas. Los comandos con --frozen-lockfile evitan resolver versiones distintas.")]
+#text[#text("Bun ejecuta TypeScript, HTTP, pruebas y bun:sqlite. La imagen Docker fija oven/bun:1.4.2; la verificación de la implementación utilizó Bun 1.4.4. La dependencia del backend es imapflow 2.2.4 según bun.lock. El frontend usa React 19, Vite 7, TypeScript 5.9, Tailwind 4 y Radix; web/bun.lock conserva las versiones resueltas. Los comandos con --frozen-lockfile evitan resolver versiones distintas.")]
 
 #text[#text("Node por sí solo no ejecuta este paquete, pues depende de bun:sqlite y Bun.serve. Una migración a Node exige sustituir esas interfaces. Docker Compose 2.24 o posterior interpreta env_file con required: false. El perfil opcional mysql usa MySQL 8.4.")]
 
-#heading(level: 2, numbering: none)[#text[#text("3. Instalación reproducible")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("3. Instalación reproducible")]]
 
-#heading(level: 3, numbering: none)[#text[#text("Opción A: Bun")]]
+#heading(level: 3, numbering: none, outlined: false)[#text[#text("Opción A: Bun")]]
 
 #text[#text("Requisitos: Git, Bun 1.4 y acceso a los paquetes durante la instalación. El recorrido de pruebas y demostración puede ejecutarse después sin buzón ni cuenta de 17TRACK.")]
 
 #block(width: 100%, fill: rgb("F5F7F9"), inset: 8pt, radius: 3pt, breakable: true)[#set text(size: 7.5pt, font: "DejaVu Sans Mono")
-#raw("git clone https://github.com/EstebanForero/prototype-grabit.git\ncd prototype-grabit\ngit checkout d62585b3c1ed3523d89e8040e66ae2f918765038\nbun install --frozen-lockfile\nbun test\ncd web\nbun install --frozen-lockfile\nbun run build\ncd ..\nTRACK17_MODE=mock bun run start", block: true)
+#raw("git clone https://github.com/EstebanForero/prototype-grabit.git\ncd prototype-grabit\ngit checkout babc0da34f2caffc9a9192274b681e00c532394c\nbun install --frozen-lockfile\nbun test\ncd web\nbun install --frozen-lockfile\nbun run build\ncd ..\nTRACK17_MODE=mock bun run start", block: true)
 ]
 
 #text[#text("Abra http://127.0.0.1:8787. La carpeta public se genera al compilar web; no viene versionada. Sin public/index.html, la raíz responde HTTP 503 con instrucciones de compilación. Para comprobar salud:")]
@@ -102,7 +114,7 @@
 
 #text[#text("En Windows PowerShell, establezca $env:TRACK17_MODE=\"mock\" y luego ejecute bun run start. Para terminar el servidor local use Ctrl+C. Durante desarrollo, bun run dev dentro de web abre Vite en 5173 con proxy /api hacia 8787.")]
 
-#heading(level: 3, numbering: none)[#text[#text("Opción B: Docker")]]
+#heading(level: 3, numbering: none, outlined: false)[#text[#text("Opción B: Docker")]]
 
 #block(width: 100%, fill: rgb("F5F7F9"), inset: 8pt, radius: 3pt, breakable: true)[#set text(size: 7.5pt, font: "DejaVu Sans Mono")
 #raw("cp .env.example .env\n# Edite .env y establezca TRACK17_MODE=mock para la demostración.\ndocker compose -p grabit-seguimiento up --build -d\ndocker compose -p grabit-seguimiento ps", block: true)
@@ -122,7 +134,7 @@
 
 #text[#text("Ese servicio de demostración usa la base seguimiento y una contraseña local incluida en Compose. No debe publicarse como servidor productivo. En Linux puede ejecutarse el mismo proceso con un usuario de servicio y systemd: WorkingDirectory debe ser la raíz instalada; ExecStart debe apuntar al Bun instalado y a src/http/server.ts; EnvironmentFile debe contener la configuración protegida. El usuario necesita escritura únicamente en los directorios de datos.")]
 
-#heading(level: 2, numbering: none)[#text[#text("4. Configuración e integraciones")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("4. Configuración e integraciones")]]
 
 #text[#text("Copie .env.example a .env solo cuando necesite configuración persistente. No incluya .env, mailbox.json ni bases con datos personales en el control de versiones. Para una demostración sin red, deje vacías las credenciales y fuerce TRACK17_MODE=mock.")]
 
@@ -179,7 +191,7 @@
 
 #text[#text("El vigilante de IMAP se ejecuta en el servidor cada 45 segundos. Al guardar una cuenta se activa; al reiniciar se activa de nuevo si se carga una cuenta válida. El historial conserva las 40 extracciones más recientes. Una lectura examina como máximo 30 mensajes dentro del periodo solicitado; capacidad y recuperación de atrasos se supervisan durante la operación.")]
 
-#heading(level: 3, numbering: none)[#text[#text("17TRACK y webhooks")]]
+#heading(level: 3, numbering: none, outlined: false)[#text[#text("17TRACK y webhooks")]]
 
 #text[#text("Operación con la API real ya disponible: conserve TRACK17_TOKEN en la configuración protegida y utilice TRACK17_MODE=live. Ejecute bun run start. El servidor utiliza la conexión real para consultar e importar guías; el token no se imprime ni se incorpora al informe. El modo mock se reserva a los ejemplos de práctica y a las pruebas sin red.")]
 
@@ -191,7 +203,7 @@
 
 #text[#text("Las tiendas cubiertas por el parser son Amazon, Mercado Libre, eBay, Alibaba y Homecenter. No hay conectores autenticados de pedidos con las API de esas tiendas. n8n es opcional para enviar el correo de prueba; el workflow necesita credenciales SMTP del usuario. El backend también puede enviar el aviso directamente con la consola o bun run enviar.")]
 
-#heading(level: 3, numbering: none)[#text[#text("Lectura de texto con IA (xAI)")]]
+#heading(level: 3, numbering: none, outlined: false)[#text[#text("Lectura de texto con IA (xAI)")]]
 
 #text[#text("src/providers/status-model.ts llama a POST https://api.x.ai/v1/responses desde el servidor cuando existe XAI_API_KEY. El modelo solicitado por defecto es grok-4.7; puede cambiarse con XAI_MODEL. Para desactivar esta función, establezca GRABIT_STATUS_MODEL=off y reinicie el proceso. La llave nunca se envía al navegador.")]
 
@@ -201,7 +213,7 @@
 
 #text[#text("Esta integración transmite hasta los primeros 4.000 caracteres del correo o evento al proveedor xAI y, en lectura de correo, puede incluir la ciudad y el país del cliente como contexto. TI administra la llave, el consumo, los datos autorizados y el acceso de red en el entorno aceptado. Las pruebas usan respuestas inyectadas y no consumen una cuenta real del modelo.")]
 
-#heading(level: 2, numbering: none)[#text[#text("5. Modelo de datos y reglas")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("5. Modelo de datos y reglas")]]
 
 #block(width: 100%,breakable:true)[#set text(size: 8.1pt)
 #table(columns: (1fr, 1fr, 1fr),inset:5pt,stroke:0.4pt+rgb("D7E0E5"),table.header(table.cell(fill: rgb("EAF4F7"), text(weight: "bold", "Tabla SQLite")), table.cell(fill: rgb("EAF4F7"), text(weight: "bold", "Clave / relación")), table.cell(fill: rgb("EAF4F7"), text(weight: "bold", "Contenido"))),
@@ -239,9 +251,9 @@
 
 #text[#text("Anular una guía preserva el registro y guarda el motivo. En cambio, Quitar usa DELETE /api/productos/{id}: elimina el producto y decisiones, y también observaciones de guías no compartidas. No tiene papelera. Ese botón es para datos descartables de la demostración; la operación real requiere un procedimiento de conservación aprobado.")]
 
-#heading(level: 2, numbering: none)[#text[#text("6. Referencia de API")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("6. Referencia de API")]]
 
-#text[#text("Base local: http://127.0.0.1:8787. Cuerpos de entrada y salida en JSON. Los endpoints administrativos carecen de autenticación propia en este corte.")]
+#text[#text("Base local: http://127.0.0.1:8787. Cuerpos de entrada y salida en JSON. Los endpoints administrativos carecen de autenticación propia en esta implementación.")]
 
 #block(width: 100%,breakable:true)[#set text(size: 8.1pt)
 #table(columns: (1fr, 1fr, 1fr),inset:5pt,stroke:0.4pt+rgb("D7E0E5"),table.header(table.cell(fill: rgb("EAF4F7"), text(weight: "bold", "Método y ruta")), table.cell(fill: rgb("EAF4F7"), text(weight: "bold", "Entrada principal")), table.cell(fill: rgb("EAF4F7"), text(weight: "bold", "Resultado"))),
@@ -314,7 +326,7 @@
 
 #text[#text("Los saltos de línea dentro del JSON son válidos. En PowerShell use los formularios de la consola o adapte el entrecomillado; curl.exe no interpreta las comillas como Bash.")]
 
-#heading(level: 2, numbering: none)[#text[#text("7. Ejecución, pruebas y evidencia")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("7. Ejecución, pruebas y evidencia")]]
 
 #block(width: 100%, fill: rgb("F5F7F9"), inset: 8pt, radius: 3pt, breakable: true)[#set text(size: 7.5pt, font: "DejaVu Sans Mono")
 #raw("bun test\nbun run demo\nGRABIT_DB=data/demo.sqlite bun src/cli/main.ts ficha --producto audifonos\nTRACK17_MODE=mock bun run demo:17track", block: true)
@@ -322,7 +334,7 @@
 
 #text[#text("bun run demo recrea data/demo.sqlite; demo:17track recrea data/demo-17track.sqlite. No los use como nombre de una base que quiera conservar. El servidor usa data/seguimiento.sqlite salvo configuración distinta. La demo HTTP de 17TRACK, a diferencia de la CLI, usa la base activa del servidor: resérvela para una instalación descartable.")]
 
-#text[#text("Verificación de esta entrega: las dependencias se instalaron con sus archivos de bloqueo; bun test aprobó 43 pruebas, cero fallos y 159 comprobaciones en cuatro archivos. También pasó la compilación del frontend con TypeScript y Vite. Estas pruebas son locales; no prueban envío real SMTP, lectura real IMAP, una llave real de 17TRACK, integración con Control, rendimiento productivo ni restauración de respaldo.")]
+#text[#text("Resultados de verificación: las dependencias se instalaron con sus archivos de bloqueo; bun test aprobó 43 pruebas, cero fallos y 159 comprobaciones en cuatro archivos. También pasó la compilación del frontend con TypeScript y Vite. La suite automatizada utiliza servicios simulados y datos sintéticos. La conectividad con servicios externos y los procedimientos de restauración se supervisan mediante las pruebas operativas descritas en este manual.")]
 
 #block(width: 100%,breakable:true)[#set text(size: 8.1pt)
 #table(columns: (1fr, 1fr, 1fr),inset:5pt,stroke:0.4pt+rgb("D7E0E5"),table.header(table.cell(fill: rgb("EAF4F7"), text(weight: "bold", "Archivo")), table.cell(fill: rgb("EAF4F7"), text(weight: "bold", "Pruebas")), table.cell(fill: rgb("EAF4F7"), text(weight: "bold", "Cobertura"))),
@@ -340,9 +352,9 @@
 [#text[#text("Parser ampliado, modo real con red simulada, cronología y firma nativa")]],
 )]
 
-#text[#text("Los correos y guías de fixtures son sintéticos. Para comprobar una integración real use una cuenta de prueba autorizada, fuerce TRACK17_MODE=live, cargue la llave de API y documente fecha, guía, transportadora y respuesta, sin publicar credenciales. El ")#link("https://www.youtube.com/watch?v=Q6-VDQ_lRcY")[#text("video narrado del MVP")]#text(", de 5:03, muestra el problema, la solución y cinco comprobaciones funcionales: aplicación automática de estado, entrega en ciudad incorrecta retenida, entrega en destino correcto aplicada, firma inválida rechazada y correo repetido sin duplicar la guía. La grabación se reproduce desde su enlace; puede usarse como respaldo de la demostración en vivo.")]
+#text[#text("Los correos y guías de fixtures son sintéticos. Para comprobar una integración real use una cuenta de prueba autorizada, fuerce TRACK17_MODE=live, cargue la llave de API y documente fecha, guía, transportadora y respuesta, sin publicar credenciales. El ")#link("https://www.youtube.com/watch?v=Q6-VDQ_lRcY")[#text("video narrado del MVP")]#text(", de 5:03, muestra el problema, la solución y cinco comprobaciones funcionales: aplicación automática de estado, entrega en ciudad incorrecta retenida, entrega en destino correcto aplicada, firma inválida rechazada y correo repetido sin duplicar la guía. La grabación constituye evidencia audiovisual de esos comportamientos.")]
 
-#heading(level: 2, numbering: none)[#text[#text("8. Operación y mantenimiento")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("8. Operación y mantenimiento")]]
 
 #text[#text("Responsable TI: revisar salud, espacio, errores de sincronización y respaldo. Responsable Compras: validar asociaciones, destinos y tarjetas retenidas. Responsable del proyecto: conservar el cierre acordado con el cliente y comparar los indicadores de operación con el modelo de beneficios.")]
 
@@ -372,14 +384,14 @@
 [#text[#text("Comprobar GRABIT_DB; demo y servidor usan bases diferentes")]],
 )]
 
-#heading(level: 2, numbering: none)[#text[#text("9. Cierre del alcance y continuidad operativa")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("9. Alcance de operación y continuidad")]]
 
-#text[#text("En la reunión de revisión con el cliente, el equipo y el cliente confirmaron que la solución estaba terminada y funcionando dentro del alcance acordado. La integración real con 17TRACK y las APIs disponibles forman parte de la entrega concluida. El cierre funcional quedó aceptado; las recomendaciones se centran en operación, mantenimiento y seguimiento de beneficios. La continuidad operativa incluye acceso al entorno interno, gestión de secretos, firmas de webhook, respaldo, conservación del historial, monitoreo y administración de cuota. Los indicadores económicos se mantienen como proyecciones y referencias de seguimiento.")]
+#text[#text("La operación del módulo se realiza en el entorno interno autorizado, con persistencia SQLite e integración real con 17TRACK. La continuidad requiere gestión de secretos, verificación de firmas de webhook, respaldo, conservación del historial, monitoreo y administración de cuota. Las adaptaciones de infraestructura o identidad corporativa deben documentarse y validarse antes de incorporarse.")]
 
-#text[#text("Fuentes de esta guía: código, esquema, archivos de bloqueo y pruebas del commit indicado; documentación original del repositorio; manual de usuario y capturas sintéticas incluidos en docs. La implementación fuente prevalece sobre las cifras de pruebas y las afirmaciones de integración antiguas del README o manual previo.")]
+#text[#text("Fuentes de esta guía: código, esquema, archivos de bloqueo y pruebas del commit indicado; documentación original del repositorio; manual de usuario y capturas sintéticas incluidos en docs. El historial del repositorio permite identificar las versiones del código y de su documentación.")]
 
 
-#heading(level: 2, numbering: none)[#text[#text("10. Mantenimiento asistido por IA del lector de correos")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("10. Mantenimiento asistido por IA del lector de correos")]]
 
 #text[#text("El repositorio incorpora un arnés de ingeniería para un agente de programación (Grok CLI) que ayuda a adaptar src/providers/email.ts cuando una tienda cambia su correo de despacho. Este arnés es una segunda aplicación de IA, distinta de la lectura de eventos de xAI descrita en la sección 4. El agente propone cambios de código; las comprobaciones y una revisión humana controlan su incorporación.")]
 
@@ -403,9 +415,6 @@
 [#text[#text("Verificador")]],
 [#text[#link("https://github.com/EstebanForero/prototype-grabit/blob/master/scripts/verificar.ts")[#text("scripts/verificar.ts")]]],
 [#text[#text("Ejecuta casos, regresión y suite; rechaza pruebas dependientes de casos temporales")]],
-[#text[#text("Evaluación y límites")]],
-[#text[#link("https://github.com/EstebanForero/prototype-grabit/blob/master/harness/INFORME.md")[#text("Informe del arnés")]]],
-[#text[#text("Resultados y condiciones de las corridas del agente")]],
 )]
 
 #text[#text("Para mantener el parser:")]
@@ -415,5 +424,3 @@
 + #text[#text("Pida al agente el cambio mínimo de src/providers/email.ts; copie el correo en una prueba permanente. El contrato y las migraciones se conservan.")]
 + #text[#text("Ejecute bun scripts/verificar.ts. Debe terminar con VERIFICACION OK; comprueba casos, correos reenviados y bun test.")]
 + #text[#text("Revise el cambio y la asociación tienda + pedido. Una persona aprueba su incorporación al repositorio y anota el resultado en la memoria.")]
-
-#text[#text("El informe registra cinco casos con la versión v3 del arnés: 5/5 cumplieron los criterios y conservaron las comprobaciones de independencia de pruebas y reenvío. La base limpia también alcanzó 5/5 en esos casos; no se atribuye a la IA una mejora estadística ni un ahorro productivo que esta muestra no demuestra. Los hooks dependen del modo y la versión de Grok CLI: las corridas strict documentadas no los ejecutaban. La revisión y el verificador explícito siguen siendo necesarios.")]

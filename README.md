@@ -15,12 +15,12 @@ La solución está terminada y funcionando dentro del alcance aceptado con Grab 
 | [Centro de documentación](docs/README.md) | Acceso organizado a manuales, arquitectura, instalación y evidencia |
 | [Manual de usuario](docs/manual-usuario.md) | Compras y operación: pasos, capturas, tareas habituales y solución de errores |
 | [Documentación técnica](docs/documentacion-tecnica.md) | TI: arquitectura, dependencias, configuración, API, base de datos, pruebas y mantenimiento |
-| [Presentación de producto e inversión en Canva](https://canva.link/fusn3pbg6o7c97a) | Grab It, funcionamiento y propuesta de continuidad por COP 9.000.000 |
+| Presentación de producto e inversión | PDF de 12 diapositivas entregado por separado; propuesta de continuidad por COP 9.000.000 |
 | [Video narrado del MVP · 5:03](https://www.youtube.com/watch?v=Q6-VDQ_lRcY) | Solución funcionando y comprobaciones del comportamiento |
 | [Informe académico en Typst](https://typst.app/project/pQ1sG2QUVmHVALKeXiJzrB) | Documento consolidado: proceso, impacto, finanzas, riesgos y anexos |
 | [IA para mantenimiento del parser](harness/INFORME.md) | Agente de programación, verificación, evidencia y límites |
 
-La presentación vigente consta de 12 diapositivas en Canva e incorpora la IA y las 43 pruebas. [docs/presentacion-final.pdf](docs/presentacion-final.pdf) conserva la versión académica histórica de 14 diapositivas, con cifras y textos anteriores al cierre actual.
+La presentación vigente se entrega por separado en PDF. Consta de 12 diapositivas, incorpora la IA y las 43 pruebas y está preparada para 15 minutos entre los cuatro integrantes, incluidos tres minutos de demostración.
 
 La implementación usa Bun y SQLite; MySQL es un esquema de referencia. La documentación técnica distingue la operación real, las pruebas con respuestas grabadas y los procedimientos de mantenimiento.
 

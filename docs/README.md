@@ -9,7 +9,7 @@ Módulo de seguimiento logístico: reúne correos de despacho y eventos de trans
 | Registrar compras, revisar guías y atender alertas | [Manual de usuario con capturas](manual-usuario.md) |
 | Instalar, configurar, ejecutar o mantener el sistema | [Documentación técnica](documentacion-tecnica.md) |
 | Descargar los manuales | [Manual de usuario PDF](manual-usuario.pdf) · [Documentación técnica PDF](documentacion-tecnica.pdf) |
-| Presentar el producto y su continuidad | [Presentación en Canva](https://canva.link/fusn3pbg6o7c97a) |
+| Presentar el producto y su continuidad | Presentación PDF de 12 diapositivas, entregada por separado |
 | Ver el MVP funcionando | [Video narrado · 5:03](https://www.youtube.com/watch?v=Q6-VDQ_lRcY) |
 | Revisar el código, pruebas y workflows | [Repositorio principal](../README.md) |
 | Revisar el informe completo y los análisis de negocio | [Informe final en Typst](https://typst.app/project/pQ1sG2QUVmHVALKeXiJzrB) |
@@ -38,4 +38,4 @@ Los manuales incluyen capturas reales de la consola con datos sintéticos. El MV
 
 Los manuales también están disponibles en PDF en esta carpeta. El informe se entrega por separado en el paquete académico; estas páginas permiten consultar la documentación directamente desde GitHub y mantener sus actualizaciones en el historial.
 
-La presentación vigente es la de Canva enlazada arriba: 12 diapositivas con la lectura de IA y las 43 pruebas. [presentacion-final.pdf](presentacion-final.pdf) se conserva como versión académica histórica de 14 diapositivas; contiene cifras y textos anteriores al cierre actual. La propuesta actualizada de continuidad operativa es de COP 9.000.000.
+La presentación vigente se entrega por separado en PDF: 12 diapositivas con la lectura de IA y las 43 pruebas, para 15 minutos entre los cuatro integrantes, incluidos tres minutos de demostración. La propuesta actualizada de continuidad operativa es de COP 9.000.000.

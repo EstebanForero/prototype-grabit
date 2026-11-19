@@ -8,13 +8,25 @@
 #set figure(gap:5pt)
 #show figure.caption:set text(size:8pt,fill:rgb("5E6B76"))
 
-#heading(level: 1, numbering: none)[#text[#text("Manual de usuario")]]
+#let navy=rgb("17324D")
+#let blue=rgb("176B87")
+#let cyan=rgb("64CCC5")
+
+
+#set heading(numbering:none)
+#show heading.where(level:2):it=>block(above:15pt,below:7pt)[#text(size:14pt,weight:"bold",fill:navy)[#it.body]]
+#show heading.where(level:3):it=>block(above:10pt,below:5pt)[#text(size:11pt,weight:"bold",fill:blue)[#it.body]]
+
+
+#heading(level: 1, numbering: none)[Manual de usuario]
+#line(length: 100%, stroke: 1pt + cyan)
+
 
 #text[#text("GRAB IT · Seguimiento de envíos · Compras y operación · 18 de noviembre de 2026")]
 
 #text[#link("https://github.com/EstebanForero/prototype-grabit/blob/master/docs/README.md")[#text("Centro de documentación")]#text(" · ")#link("https://www.youtube.com/watch?v=Q6-VDQ_lRcY")[#text("Video de demostración (5:03)")]#text(" · ")#link("https://github.com/EstebanForero/prototype-grabit/blob/master/docs/documentacion-tecnica.md")[#text("Guía para TI")]]
 
-#heading(level: 2, numbering: none)[#text[#text("1. Para qué sirve y qué necesita")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("1. Para qué sirve y qué necesita")]]
 
 #text[#text("Este manual está dirigido a quienes compran productos y revisan sus entregas. No necesita saber programar. TI debe haber instalado la consola y darle su dirección. Use un computador con navegador y acceso a la red donde está el sistema.")]
 
@@ -22,7 +34,7 @@
 
 #text[#text("La solución está terminada y funcionando dentro del alcance aceptado en la reunión con el cliente. La integración real con 17TRACK y las APIs disponibles está conectada. También puede usar ejemplos para practicar sin modificar la operación real. Las capturas de este manual usan datos sintéticos; los números mostrados son ejemplos. La consola es la interfaz entregada para Compras y no reemplaza el portal del cliente ni Control.")]
 
-#heading(level: 2, numbering: none)[#text[#text("2. Entrar a la consola")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("2. Entrar a la consola")]]
 
 + #text[#text("Abra Chrome, Edge o Firefox.")]
 + #text[#text("Escriba la dirección que le dio TI. Si está en el mismo equipo donde corre el sistema: http://127.0.0.1:8787.")]
@@ -30,7 +42,7 @@
 
 #text[#text("La consola de prueba no pide una cuenta de usuario. Solo debe abrirse en el equipo o la red controlada que TI haya preparado. Si no abre, comunique a TI la dirección y el mensaje que aparece. Si dice que falta compilar la consola, la solución corresponde a TI.")]
 
-#heading(level: 2, numbering: none)[#text[#text("3. Registrar una compra")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("3. Registrar una compra")]]
 
 #text[#text("Registre el producto antes de que llegue el correo de despacho. Si no está registrado, el sistema no sabrá a qué compra corresponde la guía.")]
 
@@ -57,7 +69,7 @@
 
 #text[#text("Ejemplo del recorrido de Amazon: identificador audifonos; modo Internacional; país CO; ciudad Bogotá; tienda Amazon; pedido 112-4455667-1234567. Use estos datos solo en la demostración. Para un pedido real, copie los datos de su compra.")]
 
-#heading(level: 2, numbering: none)[#text[#text("4. Revisar Cola de hoy")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("4. Revisar Cola de hoy")]]
 
 #figure(box(width:100%,height:95mm,clip:true)[#image("img/01-cola-de-hoy.png",width: 100%)], caption: [#text[#text("Cola de hoy. Captura de la consola con datos sintéticos.")]])
 
@@ -71,7 +83,7 @@
 
 #text[#text("No utilice Quitar con pedidos reales: elimina el producto y parte de su historial, sin papelera. Resérvelo para ejemplos descartables. Si registró mal un pedido real, comuníquelo a TI o al responsable antes de modificarlo. Corregir una guía mediante anulación conserva su registro; es distinto de quitar un producto.")]
 
-#heading(level: 2, numbering: none)[#text[#text("5. Atender alertas y retenciones")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("5. Atender alertas y retenciones")]]
 
 #text[#text("Empiece por las tarjetas retenidas o con alerta. Abra la ficha, lea el motivo y confirme con la tienda, la transportadora o el responsable correspondiente. No anuncie Entregado por una sola señal dudosa.")]
 
@@ -105,7 +117,7 @@
 
 #text[#text("Ejemplo: el cliente está en Bogotá, pero el evento dice Entregado en Medellín. La decisión queda retenida. Verifique la dirección; no trate esa entrega como confirmación del cliente. Si después llega evidencia válida en Bogotá, el sistema vuelve a evaluar el estado.")]
 
-#heading(level: 2, numbering: none)[#text[#text("6. Revisar correos en Buzón")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("6. Revisar correos en Buzón")]]
 
 #text[#text("TI configura la cuenta y prueba la conexión. Para su trabajo cotidiano:")]
 
@@ -141,7 +153,7 @@
 [#text[#text("Avise a TI; no publique ni comparta contraseñas en capturas")]],
 )]
 
-#heading(level: 2, numbering: none)[#text[#text("7. Seguimiento y modo de demostración")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("7. Seguimiento y modo de demostración")]]
 
 #text[#text("El bloque de 17TRACK permite Consultar una guía y Traer registradas. TI debe indicar si la instalación usa ejemplos grabados o consulta real. Sin una llave de API, el modo predeterminado usa respuestas de prueba; una tarjeta de ejemplo no confirma un envío real.")]
 
@@ -149,13 +161,13 @@
 
 #text[#text("Cargar correos de ejemplo y las demostraciones deben usarse únicamente con la base de prueba indicada por TI. No ejecute las demostraciones sobre pedidos reales. Los botones de envío de aviso utilizan la cuenta configurada; coordine su uso para no confundir esos correos con despachos de la operación.")]
 
-#heading(level: 3, numbering: none)[#text[#text("Cómo ayuda la inteligencia artificial")]]
+#heading(level: 3, numbering: none, outlined: false)[#text[#text("Cómo ayuda la inteligencia artificial")]]
 
 #text[#text("Cuando TI habilita esta función, el sistema puede interpretar frases de un correo o de una novedad de transporte que las reglas no reconocen con claridad. Por ejemplo, una frase que describe que el cliente recibió el paquete puede ayudar a identificar una entrega.")]
 
 #text[#text("Usted no necesita escribir instrucciones a la IA ni configurar una cuenta adicional. Revise siempre el estado y las razones de la ficha. Un correo que solo anuncia el despacho sigue siendo un despacho, y una entrega en otra ciudad necesita revisión. Si el servicio de IA no responde, el sistema conserva su lectura habitual por reglas.")]
 
-#heading(level: 2, numbering: none)[#text[#text("8. Ejercicio práctico sin correo real")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("8. Ejercicio práctico sin correo real")]]
 
 #text[#text("Pida a TI una instalación descartable en modo de ejemplos. Este ejercicio no necesita credenciales.")]
 
@@ -168,7 +180,7 @@
 
 #text[#text("Resultado esperado: una compra asociada a su guía y sin duplicado al repetir la lectura. Otros correos del ejercicio pueden quedar sin producto o sin guía; eso permite practicar la revisión de excepciones.")]
 
-#heading(level: 2, numbering: none)[#text[#text("9. Dudas frecuentes y ayuda")]]
+#heading(level: 2, numbering: none, outlined: false)[#text[#text("9. Dudas frecuentes y ayuda")]]
 
 #text[#text("¿Tengo que consultar todas las transportadoras? Con las integraciones reales configuradas, revise principalmente las alertas. En una instalación de prueba los ejemplos no sustituyen la consulta real.")]
 
@@ -176,12 +188,12 @@
 
 #text[#text("¿Por qué no cambia el estado? Puede faltar evidencia, la entrega ser parcial, no coincidir el destino o no haber llegado una novedad real. Abra la ficha antes de pedir un cambio manual.")]
 
-#text[#text("¿Se actualiza después de apagar el equipo? TI debe encender el servidor. Cuando una cuenta de buzón válida está guardada, la versión de esta entrega vuelve a activar su vigilancia al arrancar. Compruebe su estado en Buzón.")]
+#text[#text("¿Se actualiza después de apagar el equipo? TI debe encender el servidor. Cuando una cuenta de buzón válida está guardada, el sistema vuelve a activar su vigilancia al arrancar. Compruebe su estado en Buzón.")]
 
 #text[#text("¿Qué hago si registré mal una compra? Anote el identificador y el dato incorrecto y avise al responsable. No quite un pedido real para corregirlo sin un procedimiento de conservación.")]
 
 #text[#text("¿Qué envío a soporte? La acción que estaba intentando, la hora aproximada, el identificador del producto, el mensaje de error y una captura sin contraseñas ni datos personales innecesarios. Utilice el canal de soporte acordado para la operación.")]
 
-#text[#text("Antes de terminar su revisión diaria: atienda las tarjetas retenidas, compruebe que el buzón esté funcionando y deje registradas las gestiones pendientes. Las capturas de ejemplo explican el uso del sistema. Los beneficios económicos se revisan durante la operación sin modificar la aceptación funcional ya acordada con el cliente.")]
+#text[#text("Antes de terminar su revisión diaria: atienda las tarjetas retenidas, compruebe que el buzón esté funcionando y deje registradas las gestiones pendientes. Las capturas de ejemplo explican el uso del sistema.")]
 
 #text[#text("Fuente: consola, código y capturas del repositorio ")#link("https://github.com/EstebanForero/prototype-grabit")[#text("prototype-grabit")]#text(", base funcional ")#link("https://github.com/EstebanForero/prototype-grabit/tree/071fb8357351e7d38d23e29d142617cfe1c2d6f0")[#text("071fb83")]#text(". Las capturas son ejemplos de uso con datos sintéticos.")]
